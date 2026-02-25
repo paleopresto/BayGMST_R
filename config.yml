@@ -1,0 +1,23 @@
+rp_method: "PCR" # reduced proxy method
+
+folder_paths:
+  cmdstan_path: "/Users/tylerbagwell/cmdstan" # USER MUST CHANGE!
+  stan_code_path: "BayGMST_v1.0.stan"
+  forcings_path: "data/forcing.csv"
+  instr_temp_path: "data/HadCRUT.5.1.0.0.analysis.summary_series.global.annual.csv"
+  barboza_rps_path: "data/barboza_rps"
+  output_dir: "outputs"
+  figures_dir: "outputs/figures"
+  reconstruction_dir: "outputs/reconstructions"
+
+partition_years:
+  t1: 1000 # beginning year of reconstruction (integer)
+  t2: 1900 # end year of reconstruction, start of instr. period (integer)
+  t3: 2000 # end of instr. period (integer)
+
+co2_params:
+  c0: 280
+  co2_coef: 5.35
+
+vol_params:
+ vol_coef: 25.0
