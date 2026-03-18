@@ -178,11 +178,19 @@ data_list <- list(
 # The model file is read from the config, compiled, and then
 # sampled using HMC through cmdstanr.
 # ------------------------------------------------------------
+iter_warmup   <- cfg$stan_params$iter_warmup
+iter_sampling <- cfg$stan_params$iter_sampling
+
 message("Running STAN model now...")
 mod <- cmdstan_model(cfg$folder_paths$stan_code_path)
 t <- system.time({
-  fit <- mod$sample(data = data_list, chains = 4, parallel_chains = 2,
-                    iter_warmup = 500, iter_sampling = 2500)
+  fit <- mod$sample(
+    data = data_list,
+    chains = 4,
+    parallel_chains = 2,
+    iter_warmup = iter_warmup,
+    iter_sampling = iter_sampling
+  )
 })
 elapsed_sec <- unname(t["elapsed"])
 elapsed_sec
