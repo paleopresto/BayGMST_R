@@ -335,7 +335,7 @@ p_phi <- df_hist %>%
 
 p_hist <- p_beta / p_phi
 
-# plots combine side by side 
+# plots combine side by side
 # ------------------------------------------------------------
 # Combine the reconstruction panel and posterior histogram
 # panels into one final figure with a descriptive subtitle.
