@@ -2,6 +2,13 @@
 # Must be one of: "LASSO", "PCR", "SIR", "SPLS".
 rp_method: "PCR"
 
+stan_params:
+  # Number of warmup / adaptation iterations per chain
+  iter_warmup: 500
+
+  # Number of post-warmup sampling iterations per chain
+  iter_sampling: 2500
+
 folder_paths:
   # Absolute path to your local CmdStan installation.
   # Must be changed by each user to match their machine!
