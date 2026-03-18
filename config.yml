@@ -1,23 +1,61 @@
-rp_method: "PCR" # reduced proxy method
+# Method used to choose which reduced-proxy CSV to load.
+# Must be one of: "LASSO", "PCR", "SIR", "SPLS".
+rp_method: "PCR"
 
 folder_paths:
-  cmdstan_path: "/Users/tylerbagwell/cmdstan" # USER MUST CHANGE!
+  # Absolute path to your local CmdStan installation.
+  # Must be changed by each user to match their machine!
+  cmdstan_path: "/Users/tylerbagwell/cmdstan"
+
+  # Path to the Stan model file used by cmdstan_model().
   stan_code_path: "BayGMST_v1.0.stan"
+
+  # CSV containing annual forcing series.
+  #   solar, volcanic, CO2
   forcings_path: "data/forcing.csv"
+
+  # CSV containing instrumental temperature data.
+  # After reading, columns are renamed to:
+  #   year, T, l95, u95
   instr_temp_path: "data/HadCRUT.5.1.0.0.analysis.summary_series.global.annual.csv"
+
+  # Folder containing reduced-proxy CSV files such as:
+  #   RP_new_All_PCR.csv
+  #   RP_new_All_LASSO.csv
+  # etc.
+  # These files are expected to contain at least:
+  #   Year, RP1
   barboza_rps_path: "data/barboza_rps"
+
+  # Top-level output folder.
+  # Not directly used in the current script, but serves as a parent
+  # directory for figures_dir and reconstruction_dir.
   output_dir: "outputs"
+
+  # Folder where plots are saved, e.g. reconstruction_ts.png
   figures_dir: "outputs/figures"
+
+  # Folder where reconstruction outputs / posterior summaries are saved,
   reconstruction_dir: "outputs/reconstructions"
 
 partition_years:
-  t1: 1000 # beginning year of reconstruction (integer)
-  t2: 1900 # end year of reconstruction, start of instr. period (integer)
-  t3: 2000 # end of instr. period (integer)
+  # The script builds: years <- t1:t3
+  t1: 1000  # First year of the full modeling window.
+  t2: 1900  # Start year of the instrumental-temperature period, years before t2 will have T = NA and be treated as missing.
+  t3: 2000  # Final year of the full modeling window.
 
 co2_params:
+  # Baseline/reference CO2 concentration used in the log forcing transform:
+  #   G <- co2_coef * log(CO2 / c0)
+  # A common preindustrial reference is 280 ppm.
   c0: 280
+
+  # Multiplier in the CO2 forcing transform:
+  #   G <- co2_coef * log(CO2 / c0)
   co2_coef: 5.35
 
 vol_params:
- vol_coef: 25.0
+  # Multiplier in the volcanic forcing transform:
+  #   V <- -abs(vol_coef) * (1 - exp(-V))
+  # This enforces volcanic forcing to be negative after transformation.
+  vol_coef: 25.0
