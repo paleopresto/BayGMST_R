@@ -1,3 +1,17 @@
+# ============================================================
+# BayGMST_R: Bayesian global temperature reconstruction pipeline 
+#
+# This script:
+#   1. Reads user configuration from config.yml
+#   2. Loads reduced proxies, forcings, and instrumental temperatures
+#   3. Aligns all inputs onto a common annual time grid
+#   4. Applies forcing transformations / normalization
+#   5. Prepares the data list required by the Stan model
+#   6. Fits the Bayesian hierarchical model with CmdStan
+#   7. Saves posterior summaries
+#   8. Produces a reconstruction figure and posterior histograms
+# ============================================================
+
 library(config)
 library(yaml)
 library(cmdstanr)
@@ -16,7 +30,11 @@ cfg <- yaml::read_yaml("config.yml")
 set_cmdstan_path(path = cfg$folder_paths$cmdstan_path)
 
 ### FUNCTIONS:
-# a. load_proxies: which reduced proxy
+# ------------------------------------------------------------
+# Helper function: load the reduced-proxy dataset specified
+# in the config file. The proxy method determines which CSV
+# is loaded from the reduced-proxy directory.
+# ------------------------------------------------------------
 load_proxies <- function(rp_method = c("LASSO", "PCR", "SIR", "SPLS"),
                          base_dir = cfg$folder_paths$barboza_rps_path) {
   rp_method <- match.arg(toupper(rp_method), c("LASSO", "PCR", "SIR", "SPLS"))
@@ -26,6 +44,15 @@ load_proxies <- function(rp_method = c("LASSO", "PCR", "SIR", "SPLS"),
 }
 
 ### INPUTS
+# ------------------------------------------------------------
+# Load all model inputs:
+#   - reduced proxies
+#   - external forcings
+#   - instrumental temperature observations
+#
+# Also pull the reconstruction / calibration window from the
+# config file.
+# ------------------------------------------------------------
 rp_method        <- cfg$rp_method
 Proxies.in       <- load_proxies(rp_method)
 Forcings.in      <- read.csv(cfg$folder_paths$forcings_path)
@@ -38,6 +65,14 @@ t2 <- cfg$partition_years$t2
 t3 <- cfg$partition_years$t3
 
 # validate ordering: t1 <= t2 <= t3
+# ------------------------------------------------------------
+# Validate that the reconstruction window is well defined.
+# Required ordering is:
+#   t1 = start of full reconstruction window
+#   t2 = start of instrumental period
+#   t3 = end of analysis window
+# with t1 <= t2 <= t3.
+# ------------------------------------------------------------
 if (anyNA(c(t1, t2, t3))) {
   stop("t1/t2/t3 contains NA.")
 }
@@ -53,6 +88,18 @@ co2_coef <- cfg$co2_params$co2_coef
 co2_c0   <- cfg$co2_params$c0
 
 ### BUILD DATAFRAME
+# ------------------------------------------------------------
+# Build the main analysis dataframe by aligning all inputs
+# onto a common annual sequence from t1 to t3.
+#
+# The resulting dataframe contains:
+#   year = annual time index
+#   S    = solar forcing
+#   V    = volcanic forcing
+#   G    = greenhouse gas forcing
+#   T    = instrumental temperature anomaly
+#   R    = reduced proxy series
+# ------------------------------------------------------------
 years <- t1:t3
 
 stopifnot(
@@ -81,12 +128,29 @@ tail(df)
 colSums(is.na(df))
 
 ### NORMALIZE
+# ------------------------------------------------------------
+# Apply the forcing transformations used by the model:
+#   - volcanic forcing is transformed to a negative saturating form
+#   - CO2 forcing is log-transformed relative to a baseline
+#   - solar forcing is centered
+# ------------------------------------------------------------
 df$V <- -abs(vol_coef)*(1-exp(-df$V))
 df$G <- co2_coef*log(df$G/co2_c0)
 df$S <- df$S - mean(df$S)
 
 
 ### PREPARE DATA FOR STAN (VARIBALES BELOW ARE CONSISTENT WITH STAN CODE)
+# ------------------------------------------------------------
+# Prepare the observed and missing temperature indices for Stan.
+#
+# In this setup:
+#   y = instrumental temperature series (partially observed)
+#   z = reduced proxy series
+#
+# Stan receives both the observed temperature values and the
+# index locations of observed vs. missing entries, so that
+# missing historical temperatures can be estimated.
+# ------------------------------------------------------------
 y <- df$T
 z <- df$R
 
@@ -109,6 +173,11 @@ data_list <- list(
 )
 
 ### FIT BHM with STAN
+# ------------------------------------------------------------
+# Fit the Bayesian hierarchical model in Stan.
+# The model file is read from the config, compiled, and then
+# sampled using HMC through cmdstanr.
+# ------------------------------------------------------------
 message("Running STAN model now...")
 mod <- cmdstan_model(cfg$folder_paths$stan_code_path)
 t <- system.time({
@@ -120,6 +189,10 @@ elapsed_sec
 message("Done.")
 
 # posterior summaries for parameters
+# ------------------------------------------------------------
+# Save posterior summaries for key model parameters so they
+# can be inspected outside R or reused in later analysis.
+# ------------------------------------------------------------
 summ <- fit$summary(variables = c(
   "alpha0","alpha1","phi_R","phi_T",
   "beta0","betaG","betaS","betaV",
@@ -131,6 +204,11 @@ write.csv(out, file = out_path, row.names = FALSE) # NEED TO FIX THIS!!
 
 
 # PLOTTING
+# ------------------------------------------------------------
+# Extract posterior draws of the missing temperature states,
+# which correspond to the reconstructed temperature series
+# outside the observed instrumental period.
+# ------------------------------------------------------------
 draws_mean <- fit$draws("y_mis")
 idx_names  <- paste0("y_mis[", seq_along(idx_mis), "]")
 mat        <- posterior::as_draws_matrix(draws_mean)[, idx_names, drop = FALSE]
@@ -154,6 +232,12 @@ df_obs <- data.frame(
 )
 
 # time series of reconstructions
+# ------------------------------------------------------------
+# Create the main time-series reconstruction plot showing:
+#   - posterior mean reconstruction
+#   - 95% credible interval ribbon
+#   - instrumental temperature observations
+# ------------------------------------------------------------
 x_lim <- range(c(df_pred$year, df_obs$year), na.rm = TRUE)
 y_lim <- range(c(df_obs$T, df_pred$lo, df_pred$hi), na.rm = TRUE)
 
@@ -196,6 +280,13 @@ p_ts <- ggplot() +
         legend.background = element_rect(fill = NA, color = NA))
 
 # histograms of posterior dist. of parameters
+# ------------------------------------------------------------
+# Prepare posterior draws for selected structural parameters
+# and visualize their posterior distributions.
+#
+# betaG, betaV, betaS = forcing effects
+# phi_R, phi_T        = AR(1) persistence parameters
+# ------------------------------------------------------------
 betas <- c("betaG","betaV","betaS","phi_R","phi_T")
 
 draws_df <- fit$draws(variables = betas, format = "df")
@@ -245,6 +336,10 @@ p_phi <- df_hist %>%
 p_hist <- p_beta / p_phi
 
 # plots combine side by side 
+# ------------------------------------------------------------
+# Combine the reconstruction panel and posterior histogram
+# panels into one final figure with a descriptive subtitle.
+# ------------------------------------------------------------
 sub_txt <- sprintf(
   "Reconstruction window: (%s, %s);  RP computed via %s;  Estimation via Stan (HMC)",
   t1, t2, rp_method
