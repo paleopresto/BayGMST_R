@@ -32,15 +32,15 @@ nce = length(tce)
 
 #load the temperature data
 #temp <- read.table('./data/had4_krig_ama_v2_0_0.txt', header=FALSE, sep="") #last century temperature
-temp <- read.table('./data/HadCRUT.4.4.0.0.ama_ns_avg_1850-2015.txt', header=FALSE, sep="") #last century temperature
+temp <- read.table('./data/HadCRUT.4.4.0.0.ama_ns_avg_1850-2015.txt', header=FALSE, sep="") #last century temperature ## HARMONIZE WITH THE YML FILE!!!!
 
 #load the proxy data
-proxydata =read.table('./data/proxy_ama_2.0.0.txt', header=TRUE, sep="")
+proxydata =read.table('./data/proxy_ama_2.0.0.txt', header=TRUE, sep="") ## HARMONIZE WITH THE YML FILE!!!!
 #proxydata =read.table('./data/proxy_ama_2.0.0_PAGES-crit-regional+FDR.txt', header=TRUE, sep="")
 #proxydata =read.table('./data/proxy_ama_2.0.0_No_tree.txt', header=TRUE, sep="")
 
 #load metadata
-metadataproxy <- read.csv(file = 'data/metadata_2.0.0.csv',header = T)
+metadataproxy <- read.csv(file = 'data/metadata_2.0.0.csv',header = T) ### NOT NECCESSARY FOR US ATM!
 
 #####PROXY MAP###########
 metadataproxy2 <- as.data.frame(cbind(colnames(metadataproxy)[-1],t(metadataproxy[,-1])))

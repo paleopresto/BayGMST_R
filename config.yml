@@ -32,7 +32,7 @@ folder_paths:
   # etc.
   # These files are expected to contain at least:
   #   Year, RP1
-  barboza_rps_path: "data/barboza_rps"
+  barboza_rps_path: "data/barboza_rps" # RENAME THESE FILE TO BE A BIT MORE CLEAR (REMOVE BARBOZA'S NAME!)
 
   # Top-level output folder.
   # Not directly used in the current script, but serves as a parent
