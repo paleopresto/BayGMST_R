@@ -20,50 +20,40 @@ library(spls)
 library(superpc)
 library(tidyr)
 library(ggmap)
-library(maptools)
+#library(maptools)
 library(maps)
-
 library(config)
 library(yaml)
 library(here)
 
 cfg <- read_yaml(here("config.yml"))
 
+# TO-DOS/ISSUES:
+#   1. Breaks down if t1 != 1, make dynamic.
+#   2. Fix grabbing desired proxies by type
+
 set.seed(2018)
 # specify options to treat the data
-tStart = 1 #define start year (remember: the Common Era does not have a year 0).
-tEnd   = 2000 #define end year for the analysis
+t1 <- cfg$partition_years$t1
+t2 <- cfg$partition_years$t2
+t3 <- cfg$partition_years$t3
+tStart = t1 #define start year (remember: the Common Era does not have a year 0).
+tEnd   = t3 #define end year for the analysis
 tce  = tStart:tEnd
 nce = length(tce)
 
 #load the temperature data
-#temp <- read.table('./data/had4_krig_ama_v2_0_0.txt', header=FALSE, sep="") #last century temperature
-temp <- read.table('./data/HadCRUT.4.4.0.0.ama_ns_avg_1850-2015.txt', header=FALSE, sep="") #last century temperature ## HARMONIZE WITH THE YML FILE!!!!
-
 temp <- read.csv(here(cfg$folder_paths$instr_temp_path))
 colnames(temp) <- c("year","T","l95","u95")
-
-t1 <- cfg$partition_years$t1
-t2 <- cfg$partition_years$t2
-t3 <- cfg$partition_years$t3
-
 print(temp)
 
-
 #load the proxy data
-proxydata =read.table('./data/proxy_ama_2.0.0.txt', header=TRUE, sep="") ## HARMONIZE WITH THE YML FILE!!!!
-#proxydata =read.table('./data/proxy_ama_2.0.0_PAGES-crit-regional+FDR.txt', header=TRUE, sep="")
-#proxydata =read.table('./data/proxy_ama_2.0.0_No_tree.txt', header=TRUE, sep="")
-
 proxydata =read.csv(here('data','PAGES2K_proxy_matrix_1-2000.csv'), header=TRUE, sep=",")
-View(proxydata)
+#View(proxydata)
 
 #load metadata
-metadataproxy <- read.csv(file = 'data/metadata_2.0.0.csv',header = T) ### NOT NECCESSARY FOR US ATM!
-
 metadataproxy =read.csv(here('data','PAGES2K_proxy_metadata_1-2000.csv'), header=TRUE, sep=",")
-View(metadataproxy)
-unique(sub("\\..*$", "", metadataproxy$ptype))
+#View(metadataproxy)
 
 ### GRAB THE DESIRED PROXY TYPE FOR RP
 # "ALL", "lake", "speleothem", "ice", "borehole", "tree", "documents", "hybrid", "marine", "coral", "bivalve"
@@ -98,7 +88,7 @@ histogram_first <- ggplot(data = datahist)+
 histogram_first
 
 # define analysis options
-RP_style="LASSO" #possible choices: "PCR", "LASSO", "SIR", "SPLS" #### EDIT THIS YML!!!
+RP_style = "LASSO" #cfg$rp_method  #possible choices: "PCR", "LASSO", "SIR", "SPLS" #### EDIT THIS YML!!!
 ## DEFINE FUNCTIONS USED LATER
 #define function %!in% which is same as ~ismember
 '%!in%' <- function(x,y)!('%in%'(y,x))
@@ -106,10 +96,9 @@ RP_style="LASSO" #possible choices: "PCR", "LASSO", "SIR", "SPLS" #### EDIT THIS
 #define rfind fun ction as similar to find in matlab
 rfind <- function(x)seq(along=x)[as.logical(x)] 
 
-
 # scale the proxy records to unit variance and zero mean
 proxy_scaled = scale(proxy)
-View(proxy)
+#View(proxy_scaled)
 
 # NEW
 proxy_filled <- apply(proxy_scaled, 2, function(x) {
@@ -119,6 +108,7 @@ proxy_filled <- apply(proxy_scaled, 2, function(x) {
 })
 rownames(proxy_filled) <- rownames(proxy_scaled)
 colnames(proxy_filled) <- colnames(proxy_scaled)
+#View(proxy_filled)
 
 # count the number of available datapoints in each record
 navl = matrix(1, 1, np) 
@@ -227,7 +217,7 @@ for (k in 1:ns){   # loop over segments
 
 
 colnames(RP) <- paste0('RP',seq(1,8))
-RP <- data.frame(Year=1:2000,RP)
+RP <- data.frame(Year=t1:t3, RP)
 
 RPn <- RP %>% gather(key = 'RPNumber',value = 'Value',RP1:RP8)
 
@@ -238,12 +228,19 @@ plotcombined <- ggplot(data = RPn,mapping = aes(x = Year,y = Value))+
   theme_bw()
 plotcombined
 
-save(RPn,file=paste0('Plot_RP',RP_style,'.RData'))
-dataset <- 'All'
-save(RP,file = paste0('./results/RPs/RP_new_',dataset,'_',RP_style,'.RData'))
+#save(RPn,file=paste0('Plot_RP',RP_style,'.RData'))
+#dataset <- 'All'
+#save(RP,file = paste0('./results/RPs/RP_new_',dataset,'_',RP_style,'.RData'))
 
 
-###SINGLE SERIES 
-RPind <- apply(RP[,-1], 1, function(x) mean(x,na.rm=T))
-save(RPind,file = paste0('./results/RPs/RPind_',dataset,'_',RP_style,'.RData'))
-plot(RPind,type='l')
+###SINGLE RP SERIES 
+RPind <- data.frame(
+  Year = RP$Year,
+  RP1 = apply(RP[, -1], 1, function(x) mean(x, na.rm = TRUE))
+)
+write.csv(RPind, here("data", "RPind.csv"), row.names = FALSE)
+plot(RPind$Year, RPind$RP1, type='l')
+head(RPind)
+
+
+
