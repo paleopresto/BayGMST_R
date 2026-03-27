@@ -2,6 +2,8 @@
 # Must be one of: "LASSO", "PCR", "SIR", "SPLS".
 rp_method: "PCR"
 
+ptype: "ALL" # "ALL", "lake", "speleothem", "ice", "borehole", "tree", "documents", "hybrid", "marine", "coral", "bivalve"
+
 stan_params:
   # Number of warmup / adaptation iterations per chain
   iter_warmup: 500
@@ -47,7 +49,7 @@ folder_paths:
 
 partition_years:
   # The script builds: years <- t1:t3
-  t1: 1000  # First year of the full modeling window.
+  t1: 1  # First year of the full modeling window.
   t2: 1900  # Start year of the instrumental-temperature period, years before t2 will have T = NA and be treated as missing.
   t3: 2000  # Final year of the full modeling window.
 

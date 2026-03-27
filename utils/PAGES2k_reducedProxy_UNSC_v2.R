@@ -14,7 +14,7 @@ library(glmnet)
 library(parallel)
 library(matrixStats)
 library(dr)
-library(edrGraphicalTools)
+#library(edrGraphicalTools)
 library(stringr)
 library(spls)
 library(superpc)
@@ -63,34 +63,17 @@ metadataproxy <- read.csv(file = 'data/metadata_2.0.0.csv',header = T) ### NOT N
 
 metadataproxy =read.csv(here('data','PAGES2K_proxy_metadata_1-2000.csv'), header=TRUE, sep=",")
 View(metadataproxy)
+unique(sub("\\..*$", "", metadataproxy$ptype))
 
-#####PROXY MAP###########
-metadataproxy2 <- as.data.frame(cbind(colnames(metadataproxy)[-1],t(metadataproxy[,-1])))
-rownames(metadataproxy2) <- NULL
-colnames(metadataproxy2) <- c('Name',as.vector(metadataproxy[,1]))
-metadataproxy2$geo_latitude <- as.numeric(as.character(metadataproxy2$geo_latitude))
-metadataproxy2$geo_longitude <- as.numeric(as.character(metadataproxy2$geo_longitude))
+### GRAB THE DESIRED PROXY TYPE FOR RP
+# "ALL", "lake", "speleothem", "ice", "borehole", "tree", "documents", "hybrid", "marine", "coral", "bivalve"
+if (cfg$ptype=='ALL'){
+  NULL # nothing to do
+}else{
+  desired_proxies <- metadataproxy[sub("\\..*$", "", metadataproxy$ptype) == cfg$ptype, ]
+  proxydata <- proxydata[, colnames(proxydata) %in% desired_proxies$pid, drop = FALSE]
+}
 
-simbolos <- c('bivalve'=0,'borehole'=1,'coral'=2,'glacier ice'=3,'hybrid'=4,
-              'lake sediment'=5,'marine sediment'=6,'sclerosponge'=7,
-              'speleothem'=8,'tree'=9)
-
-colores <- c('bivalve'='#F2D715','borehole'='#BBB87E','coral'='#FB9C05',
-             'glacier ice'='#89B8E2','hybrid'='#2B8FCE','lake sediment'='#57649C',
-             'marine sediment'='#955421','sclerosponge'='#EA132B',
-             'speleothem'='#F81F6C','tree'='#489268')
-
-#scale_color_brewer(type = 'div',palette = 'Spectral')
-#guides(color=guide_legend(title='Type of Proxy:'))+
-mapWorld <- borders("world", colour="gray50", fill="#F6F6F6") 
-plotproxies <- ggplot(data = metadataproxy2)+mapWorld+
-  geom_point(aes(x=geo_longitude, y=geo_latitude,color=archiveType,shape=archiveType), size=3,stroke=1)+
-  scale_color_manual(name='Type of Proxy:',values = colores)+
-  scale_shape_manual(name='Type of Proxy:',values = simbolos)+
-  xlab('Longitude')+ylab('Latitude')+
-  theme_bw()+
-  theme(axis.title.x = element_text(size=14),axis.title.y = element_text(size=14),
-        legend.title = element_text(size=14),legend.text = element_text(size=12))
 ############################
 
 t=proxydata[,1]
@@ -112,31 +95,7 @@ histogram_first <- ggplot(data = datahist)+
   theme_bw()+
   theme(axis.title.x = element_text(size=18),axis.text.x = element_text(size=14),
         axis.text.y = element_text(size=14))
-########AREA PLOT##############################
-#etiquetas <- as.character(metadataproxy2$archiveType)
-#proxy2 <- proxy
-#for(x in 1:257){
-#  proxy2[!is.na(proxy2[,x]),x] <- etiquetas[x]
-#}
-#scale_fill_brewer(type = 'div',palette = 'Spectral')+
-#proxy2 <- as.data.frame(t(proxy2))
-#proxy2 <- proxy2 %>% mutate(Name=rownames(proxy2))
-#proxy2 <- proxy2 %>% gather(key = 'Year',value = 'Type',-Name) %>%
-#  filter(!is.na(Type))
-#taproxies <- proxy2 %>% dplyr::select(-Name) %>% mutate(Year=as.numeric(Year)) %>% 
-#  group_by(Year,Type) %>% summarise(Number=n()) %>% arrange(Year,Type)
-#plottaproxies <- ggplot(data = taproxies, mapping =aes(x = Year,y = Number,fill=Type))+
-#  geom_area()+
-#  scale_fill_manual(values = colores)+
-#  theme_bw()+  theme(axis.title.x = element_text(size=14),axis.title.y = element_text(size=14),
-#                     legend.title = element_text(size=14),legend.text = element_text(size=12),
-#                     legend.position = 'none')
-#Combination map-area plot:
-#combinedmap_area <- plot_grid(plotproxies,plottaproxies,nrow=2,
-#                              rel_widths = c(1,0.45),rel_heights = c(1,0.45))
-
-#totalproxies <- taproxies %>% group_by(Year) %>% summarise(total=sum(Number))
-
+histogram_first
 
 # define analysis options
 RP_style="LASSO" #possible choices: "PCR", "LASSO", "SIR", "SPLS" #### EDIT THIS YML!!!
@@ -150,7 +109,7 @@ rfind <- function(x)seq(along=x)[as.logical(x)]
 
 # scale the proxy records to unit variance and zero mean
 proxy_scaled = scale(proxy)
-View(proxy_filled)
+View(proxy)
 
 # NEW
 proxy_filled <- apply(proxy_scaled, 2, function(x) {
