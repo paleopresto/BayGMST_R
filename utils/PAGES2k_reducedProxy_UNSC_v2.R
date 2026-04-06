@@ -36,7 +36,7 @@ set.seed(2018)
 # specify options to treat the data
 t1 <- cfg$partition_years$t1
 t2 <- cfg$partition_years$t2
-t3 <- cfg$partition_years$t3
+t3 <- 2000#cfg$partition_years$t3
 tStart = t1 #define start year (remember: the Common Era does not have a year 0).
 tEnd   = t3 #define end year for the analysis
 tce  = tStart:tEnd
