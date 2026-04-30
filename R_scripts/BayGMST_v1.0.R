@@ -83,6 +83,17 @@ if (!(t1 <= t2 && t2 <= t3)) {
   stop(sprintf("Invalid partition years: require t1 <= t2 <= t3, got t1=%s, t2=%s, t3=%s", t1, t2, t3))
 }
 
+instru_year_min <- min(Temperatures.in$year, na.rm = TRUE)
+instru_year_max <- max(Temperatures.in$year, na.rm = TRUE)
+if (!all(c(t2, t3) >= instru_year_min & c(t2, t3) <= instru_year_max)) {
+  stop(
+    sprintf(
+      "t2 and/or t3 are outside the observed instrumental temperature year range [%s, %s]. t2 = %s, t3 = %s",
+      instru_year_min, instru_year_max, t2, t3
+    )
+  )
+}
+
 vol_coef <- cfg$vol_params$vol_coef
 co2_coef <- cfg$co2_params$co2_coef
 co2_c0   <- cfg$co2_params$c0
