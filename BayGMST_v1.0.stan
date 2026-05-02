@@ -18,7 +18,6 @@ data {
   vector[NT_obs] y_obs; // observed instrumental temperatures (T)
   vector[NT] z;         // proxy records (R)
 }
-
 parameters {
   real alpha0;
   real alpha1;
@@ -36,19 +35,17 @@ parameters {
   // declare the missing temperature values as parameters to be estimated
   vector[NT_mis] y_mis; 
 }
-
 transformed parameters {
   // construct the full Temperature vector T (called 'y' here)
   // this merges the parameters (missing) and data (observed)
   vector[NT] y;
-  y[idx_obs] = y_obs; 
+  y[idx_obs] = y_obs;
   y[idx_mis] = y_mis; // performing inference on the missing values of T
 
   // calculate the deterministic mean based on forcings
   vector[NT] mu_forcing;
   mu_forcing = beta0 + betaG * G + betaS * S + betaV * V;
 }
-
 model {
   // #### priors ####
   // #### priors ####
@@ -90,10 +87,32 @@ model {
   );
 }
 generated quantities {
-  vector[NT] mu_y;      // fitted mean for y_t
+  vector[NT] mu_y;              // fitted mean for y_t
+  vector[NT_obs] y_ins_fitted;  // fitted temperature values for the instrumental period (for posterior predictive checks)
+  real sigma_y_ins;             // effective noise for the fitted values during the instrumental period (combining process and proxy noise)
 
   // y mean (conditional on realized y[t-1]) 
   mu_y[1] = mu_forcing[1];
   for (t in 2:NT)
     mu_y[t] = phi_T * y[t-1] + mu_forcing[t];
+
+  // y fitted values for the observed period (for PPCs)
+  sigma_y_ins = alpha1^2/sigma_z^2;
+  sigma_y_ins = sigma_y_ins + (1/sigma_y^2);
+  sigma_y_ins = inv_sqrt(sigma_y_ins);
+
+  for (t in 1:NT_obs){
+    real mu_help;
+    real mu_y_help;
+    if (t == 1){
+      mu_y_help = phi_T * y[NT_mis] + mu_forcing[idx_obs[t]];
+      mu_help = (mu_y_help/sigma_y^2) + (alpha1 * (z[idx_obs[t]] - phi_R*z[NT_mis])/sigma_z^2); // CHECK THIS LINE
+    }
+    else {
+      mu_y_help = phi_T * y_ins_fitted[t-1] + mu_forcing[idx_obs[t]];
+      mu_help = (mu_y_help/sigma_y^2) + (alpha1 * (z[idx_obs[t]] - phi_R*z[idx_obs[t-1]])/sigma_z^2);
+    }
+    mu_help = mu_help * sigma_y_ins^2;
+    y_ins_fitted[t] = normal_rng(mu_help, sigma_y_ins);
+  }
 }

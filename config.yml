@@ -1,6 +1,6 @@
 # Method used to choose which reduced-proxy CSV to load.
 # Must be one of: "LASSO", "PCR", "sPCR", "SIR", "SPLS".
-rp_method: "PCR"
+rp_method: "LASSO"
 
 ptype: "ALL" # "ALL", "lake", "speleothem", "ice", "borehole", "tree", "documents", "hybrid", "marine", "coral", "bivalve"
 
@@ -9,7 +9,13 @@ stan_params:
   iter_warmup: 500
 
   # Number of post-warmup sampling iterations per chain
-  iter_sampling: 2500
+  iter_sampling: 5000
+  
+partition_years:
+  # The script builds: years <- t1:t3
+  t1: 1501  # First year of the full modeling window.
+  t2: 1900  # Start year of the instrumental-temperature period, years before t2 will have T = NA and be treated as missing.
+  t3: 2000  # Final year of the full modeling window.
 
 folder_paths:
   # Absolute path to your local CmdStan installation.
@@ -46,12 +52,6 @@ folder_paths:
 
   # Folder where reconstruction outputs / posterior summaries are saved,
   reconstruction_dir: "outputs/reconstructions"
-
-partition_years:
-  # The script builds: years <- t1:t3
-  t1: 1  # First year of the full modeling window.
-  t2: 1850  # Start year of the instrumental-temperature period, years before t2 will have T = NA and be treated as missing.
-  t3: 2000  # Final year of the full modeling window.
 
 co2_params:
   # Baseline/reference CO2 concentration used in the log forcing transform:

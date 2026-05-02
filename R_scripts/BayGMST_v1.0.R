@@ -207,6 +207,50 @@ elapsed_sec <- unname(t["elapsed"])
 elapsed_sec
 message("Done.")
 
+
+tail(fit$summary(variables = c("y_ins_fitted")))
+
+
+
+obs_idx <- !is.na(df$T)
+y_ins_summary <- fit$summary(variables = "y_ins_fitted")
+y_ins_summary <- fit$summary(
+  variables = "y_ins_fitted",
+  ~posterior::quantile2(.x, probs = c(0.025, 0.160, 0.840, 0.975)),
+  "mean"
+)
+df_ins <- data.frame(
+  year = df$year[obs_idx],
+  T.obs = df$T[obs_idx],
+  T.mean = y_ins_summary$mean,
+  T.lo = y_ins_summary$q16,
+  T.hi = y_ins_summary$q84,
+  T.lolo = y_ins_summary$q2.5,
+  T.hihi = y_ins_summary$q97.5
+)
+err <- df_ins$T.mean - df_ins$T.obs
+perf_stats <- data.frame(
+  RMSE = sqrt(mean(err^2, na.rm = TRUE)),
+  MAE = mean(abs(err), na.rm = TRUE),
+  Bias = mean(err, na.rm = TRUE),
+  Correlation = cor(df_ins$T.obs, df_ins$T.mean, use = "complete.obs"),
+  R2 = cor(df_ins$T.obs, df_ins$T.mean, use = "complete.obs")^2
+)
+perf_stats
+
+
+plot(df_ins$year, df_ins$T.mean, type='l', col='red', lwd=2.0, lty=1, ylim=c(-0.7, +0.5))
+lines(df_ins$year, df_ins$T.lolo,  type='l', col='red', lwd=1.5, lty=5)
+lines(df_ins$year, df_ins$T.hihi, type='l', col='red', lwd=1.5, lty=5)
+lines(df_ins$year, df_ins$T.obs, Temps_inst$T, type='l', col='black', lwd=1.0, lty=1)
+
+# residual analysis
+df_ins$resid <- df_ins$T.obs - df_ins$T.mean
+acf(df_ins$resid, na.action = na.pass, main = "ACF of fitted residuals")
+pacf(df_ins$resid, na.action = na.pass, main = "PACF of fitted residuals")
+
+
+
 # posterior summaries for parameters
 # ------------------------------------------------------------
 # Save posterior summaries for key model parameters so they
@@ -234,15 +278,19 @@ mat        <- posterior::as_draws_matrix(draws_mean)[, idx_names, drop = FALSE]
 y1_post    <- cbind(
   t = idx_mis,
   mean = apply(mat, 2, mean),
-  lo = apply(mat, 2, quantile, 0.025),
-  hi = apply(mat, 2, quantile, 0.975)
+  lo = apply(mat, 2, quantile, 0.160),
+  hi = apply(mat, 2, quantile, 0.840),
+  lolo = apply(mat, 2, quantile, 0.025),
+  hihi = apply(mat, 2, quantile, 0.975)
 )
 
 df_pred <- data.frame(
   year = as.numeric(idx_mis + t1),
   mean = as.numeric(y1_post[, "mean"]),
   lo   = as.numeric(y1_post[, "lo"]),
-  hi   = as.numeric(y1_post[, "hi"])
+  hi   = as.numeric(y1_post[, "hi"]),
+  lolo   = as.numeric(y1_post[, "lolo"]),
+  hihi   = as.numeric(y1_post[, "hihi"])
 )
 
 df_obs <- data.frame(
@@ -257,47 +305,93 @@ df_obs <- data.frame(
 #   - 95% credible interval ribbon
 #   - instrumental temperature observations
 # ------------------------------------------------------------
-x_lim <- range(c(df_pred$year, df_obs$year), na.rm = TRUE)
-y_lim <- range(c(df_obs$T, df_pred$lo, df_pred$hi), na.rm = TRUE)
+x_lim <- range(c(df_pred$year, df_obs$year, df_ins$year), na.rm = TRUE)
+y_lim <- range(
+  c(df_obs$T, df_pred$lolo, df_pred$hihi, df_ins$T.lolo, df_ins$T.hihi),
+  na.rm = TRUE
+)
+r2_label <- sprintf("Instrumental fitted R^2 = %.2f", perf_stats$R2)
 
 p_ts <- ggplot() +
   geom_ribbon(
-    data = df_pred, fill="#005AB5",
-    aes(x = year, ymin = lo, ymax = hi),
+    data = df_pred, fill = "cyan3",
+    aes(x = year, ymin = lolo, ymax = hihi),
     alpha = 0.4
   ) +
+  geom_ribbon(
+    data = df_pred, fill = "cyan4",
+    aes(x = year, ymin = lo, ymax = hi),
+    alpha = 0.5
+  ) +
   geom_line(
-    data = df_pred, color="#005AB5",
-    aes(x = year, y = lo),
+    data = df_pred, color = "cyan3",
+    aes(x = year, y = lolo),
     alpha = 0.2
   ) +
   geom_line(
-    data = df_pred, color="#005AB5",
-    aes(x = year, y = hi),
+    data = df_pred, color = "cyan3",
+    aes(x = year, y = hihi),
     alpha = 0.2
   ) +
   geom_line(
     data = df_pred,
-    aes(x = year, y = mean, color = "Posterior mean (w/ 95% CrI)"),
-    linewidth = 0.65,
+    aes(x = year, y = mean, color = "Posterior mean T reconstruction"),
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  geom_ribbon(
+    data = df_ins,
+    aes(x = year, ymin = T.lo, ymax = T.hi),
+    fill = "darkorange4",
+    alpha = 0.70,
+    na.rm = TRUE
+  ) +
+  geom_ribbon(
+    data = df_ins,
+    aes(x = year, ymin = T.lolo, ymax = T.hihi),
+    fill = "darkorange2",
+    alpha = 0.50,
     na.rm = TRUE
   ) +
   geom_line(
     data = df_obs,
     aes(x = year, y = T, color = "T Anomaly, HadCRUT5"),
-    linewidth = 0.65,
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  geom_line(
+    data = df_ins,
+    aes(x = year, y = T.mean, color = "T fitted, instrumental period"),
+    linewidth = 0.55,
+    alpha = 0.90,
     na.rm = TRUE
   ) +
   scale_color_manual(
     name = "",
-    values = c("T Anomaly, HadCRUT5" = "black", "Posterior mean (w/ 95% CrI)" = "red")
+    values = c(
+      "T Anomaly, HadCRUT5" = "grey20",
+      "Posterior mean T reconstruction" = "darkorchid4",
+      "T fitted, instrumental period" = "limegreen"
+    )
   ) +
   coord_cartesian(xlim = x_lim, ylim = y_lim) +
+  annotate(
+    "text",
+    x = Inf,
+    y = Inf,
+    label = r2_label,
+    hjust = 1.05,
+    vjust = 1.5,
+    size = 4
+  ) +
   labs(x = "year", y = "T (deg C)") +
   theme_light(base_size = 12) +
-  theme(legend.position = c(0.22,0.85),
-        legend.background = element_rect(fill = NA, color = NA))
+  theme(
+    legend.position = c(0.25, 0.85),
+    legend.background = element_rect(fill = NA, color = NA)
+  )
 
+p_ts
 # histograms of posterior dist. of parameters
 # ------------------------------------------------------------
 # Prepare posterior draws for selected structural parameters
@@ -309,6 +403,29 @@ p_ts <- ggplot() +
 betas <- c("betaG","betaV","betaS","phi_R","phi_T")
 
 draws_df <- fit$draws(variables = betas, format = "df")
+
+# --- trace plots
+trace_df <- draws_df %>%
+  pivot_longer(
+    cols = all_of(betas),
+    names_to = "parameter",
+    values_to = "value"
+  )
+
+p_trace <- ggplot(trace_df, aes(x = .iteration, y = value, group = .chain, color = factor(.chain))) +
+  geom_line(alpha = 0.7, linewidth = 0.3) +
+  facet_wrap(~ parameter, scales = "free_y", ncol = 2) +
+  labs(
+    x = "Iteration",
+    y = "Draw value",
+    color = "Chain",
+    title = "Trace plots"
+  ) +
+  theme_bw()
+
+ggsave(paste0(cfg$folder_paths$figures_dir,"/trace_plots.png"), 
+       plot = p_trace, width = 10, height = 5, units = "in", dpi = 300, bg = "white")
+# ------ # 
 
 df_hist <- draws_df %>%
   select(all_of(betas)) %>%
@@ -332,7 +449,7 @@ base_hist <- function(dat) {
   ggplot(dat, aes(x = value)) +
     geom_histogram(aes(y = after_stat(density)),
                    bins = 80, linewidth = 0.2,
-                   color = "white", fill = "#1A85FF") +
+                   color = "white", fill = "black") +
     geom_vline(xintercept = 0.0) +
     geom_hline(yintercept = 0.0) +
     labs(x = "Posterior dist.", y = "Density") +
@@ -373,4 +490,4 @@ p <- p_ts + p_hist + plot_layout(widths = c(4, 1)) + plot_annotation(
   )
 p
 
-ggsave(paste0(cfg$folder_paths$figures_dir,"/reconstruction_ts.png"), plot = p, width = 10, height = 5, units = "in", dpi = 300, bg = "white")
+ggsave(paste0(cfg$folder_paths$figures_dir,"/reconstruction_ts_8_LASSO_1900.png"), plot = p, width = 10, height = 5, units = "in", dpi = 300, bg = "white")
