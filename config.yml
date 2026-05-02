@@ -9,12 +9,12 @@ stan_params:
   iter_warmup: 500
 
   # Number of post-warmup sampling iterations per chain
-  iter_sampling: 5000
+  iter_sampling: 5000 # must be greater than 1000
   
 partition_years:
   # The script builds: years <- t1:t3
-  t1: 1501  # First year of the full modeling window.
-  t2: 1900  # Start year of the instrumental-temperature period, years before t2 will have T = NA and be treated as missing.
+  t1: 1  # First year of the full modeling window.
+  t2: 1850  # Start year of the instrumental-temperature period, years before t2 will have T = NA and be treated as missing.
   t3: 2000  # Final year of the full modeling window.
 
 folder_paths:

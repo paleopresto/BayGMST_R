@@ -192,6 +192,10 @@ data_list <- list(
 iter_warmup   <- cfg$stan_params$iter_warmup
 iter_sampling <- cfg$stan_params$iter_sampling
 
+if (iter_sampling < 1000) {
+  stop("cfg$stan_params$iter_sampling must be at least 1000.")
+}
+
 message("Running STAN model now...")
 mod <- cmdstan_model(cfg$folder_paths$stan_code_path)
 t <- system.time({
@@ -310,18 +314,33 @@ y_lim <- range(
   c(df_obs$T, df_pred$lolo, df_pred$hihi, df_ins$T.lolo, df_ins$T.hihi),
   na.rm = TRUE
 )
-r2_label <- sprintf("Instrumental fitted R^2 = %.2f", perf_stats$R2)
+r2_label <- sprintf("Instrumental Period R² = %.2f", perf_stats$R2)
+annot_x <- x_lim[2] - 0.01 * diff(x_lim)
+annot_y <- y_lim[1] + 0.05 * diff(y_lim)
+
+alpha_dark = 0.90
+alpha_lite = 0.30
 
 p_ts <- ggplot() +
   geom_ribbon(
-    data = df_pred, fill = "cyan3",
-    aes(x = year, ymin = lolo, ymax = hihi),
-    alpha = 0.4
+    data = df_pred,
+    aes(
+      x = year,
+      ymin = lolo,
+      ymax = hihi,
+      fill = "95% Credible Band",
+      alpha = "95% Credible Band"
+    )
   ) +
   geom_ribbon(
-    data = df_pred, fill = "cyan4",
-    aes(x = year, ymin = lo, ymax = hi),
-    alpha = 0.5
+    data = df_pred,
+    aes(
+      x = year,
+      ymin = lo,
+      ymax = hi,
+      fill = "68% Credible Band",
+      alpha = "68% Credible Band"
+    )
   ) +
   geom_line(
     data = df_pred, color = "cyan3",
@@ -335,60 +354,89 @@ p_ts <- ggplot() +
   ) +
   geom_line(
     data = df_pred,
-    aes(x = year, y = mean, color = "Posterior mean T reconstruction"),
+    aes(x = year, y = mean, color = "Pre-Instrumental Reconstruction (Post. Mean)"),
     linewidth = 0.55,
     na.rm = TRUE
   ) +
   geom_ribbon(
     data = df_ins,
     aes(x = year, ymin = T.lo, ymax = T.hi),
-    fill = "darkorange4",
-    alpha = 0.70,
+    fill = "darkorange3",
+    alpha = alpha_dark,
     na.rm = TRUE
   ) +
   geom_ribbon(
     data = df_ins,
     aes(x = year, ymin = T.lolo, ymax = T.hihi),
     fill = "darkorange2",
-    alpha = 0.50,
+    alpha = alpha_lite,
     na.rm = TRUE
   ) +
   geom_line(
     data = df_obs,
-    aes(x = year, y = T, color = "T Anomaly, HadCRUT5"),
+    aes(x = year, y = T, color = "HadCRUT5 (Instrumental Observations)"),
     linewidth = 0.55,
     na.rm = TRUE
   ) +
   geom_line(
     data = df_ins,
-    aes(x = year, y = T.mean, color = "T fitted, instrumental period"),
+    aes(x = year, y = T.mean, color = "Instrumental Reconstruction (Post. Mean)"),
     linewidth = 0.55,
     alpha = 0.90,
     na.rm = TRUE
   ) +
   scale_color_manual(
+    name = "GMST Anomaly",
+    values = c(
+      "HadCRUT5 (Instrumental Observations)" = "grey20",
+      "Pre-Instrumental Reconstruction (Post. Mean)" = "darkorchid4",
+      "Instrumental Reconstruction (Post. Mean)" = "limegreen"
+    )
+  ) +
+  scale_fill_manual(
     name = "",
     values = c(
-      "T Anomaly, HadCRUT5" = "grey20",
-      "Posterior mean T reconstruction" = "darkorchid4",
-      "T fitted, instrumental period" = "limegreen"
+      "95% Credible Band" = "cyan3",
+      "68% Credible Band" = "cyan3"
+    )
+  ) +
+  scale_alpha_manual(
+    name = "",
+    values = c(
+      "95% Credible Band" = alpha_lite,
+      "68% Credible Band" = alpha_dark
+    )
+  )  +
+  guides(
+    alpha = "none",
+    color = guide_legend(
+      byrow = TRUE,
+      keyheight = unit(0.55, "lines")
+    ), 
+    fill = guide_legend(
+      override.aes = list(
+        alpha = c(alpha_dark, alpha_lite)
+      ), keyheight = unit(0.55, "lines")
     )
   ) +
   coord_cartesian(xlim = x_lim, ylim = y_lim) +
   annotate(
     "text",
-    x = Inf,
-    y = Inf,
+    x = annot_x,
+    y = annot_y,
     label = r2_label,
-    hjust = 1.05,
-    vjust = 1.5,
-    size = 4
+    hjust = 1,
+    vjust = 0,
+    size = 3.5
   ) +
-  labs(x = "year", y = "T (deg C)") +
-  theme_light(base_size = 12) +
+  labs(x = "year", y = "GMST Anomaly (°C)") +
+  theme_light(base_size = 11) +
   theme(
-    legend.position = c(0.25, 0.85),
-    legend.background = element_rect(fill = NA, color = NA)
+    legend.position = c(0.01, 0.60),
+    legend.justification = c(0, 0),
+    legend.background = element_rect(fill = NA, color = NA),
+    legend.title = element_text(hjust = 0.5),
+    legend.spacing.y = unit(0.01, "lines")
   )
 
 p_ts
@@ -448,13 +496,22 @@ beta_min <- df_hist %>%
 base_hist <- function(dat) {
   ggplot(dat, aes(x = value)) +
     geom_histogram(aes(y = after_stat(density)),
-                   bins = 80, linewidth = 0.2,
-                   color = "white", fill = "black") +
+                   bins = 80, linewidth = 0.15,
+                   color = "white", fill = "gray40") +
     geom_vline(xintercept = 0.0) +
     geom_hline(yintercept = 0.0) +
     labs(x = "Posterior dist.", y = "Density") +
-    theme_minimal(base_size = 12) +
-    theme(strip.text = element_text(face = "bold"))
+    scale_x_continuous(
+      labels = function(x) signif(x, 1)
+    ) +
+    scale_y_continuous(
+      breaks = scales::breaks_pretty(n = 3)
+    ) +
+    theme_minimal(base_size = 10) +
+    theme(strip.text = element_text(face = "bold"),
+          axis.title.x = element_text(size = 10),
+          axis.title.y = element_text(size = 10),
+          panel.grid.minor = element_blank())
 }
 
 p_beta <- df_hist %>%
@@ -462,7 +519,7 @@ p_beta <- df_hist %>%
   base_hist() +
   facet_wrap(~parameter, ncol = 1, scales = "free_y") +
   coord_cartesian(xlim = c(beta_min, beta_max))
-
+p_beta
 p_phi <- df_hist %>%
   filter(parameter %in% phi_params) %>%
   base_hist() +
@@ -477,11 +534,11 @@ p_hist <- p_beta / p_phi
 # panels into one final figure with a descriptive subtitle.
 # ------------------------------------------------------------
 sub_txt <- sprintf(
-  "Reconstruction window: (%s, %s);  RP computed via %s;  Estimation via Stan (HMC)",
+  "Reconstruction window: (%s, %s);  RP computed via %s;  AR(1) structure in T and R equations",
   t1, t2, rp_method
 )
 p <- p_ts + p_hist + plot_layout(widths = c(4, 1)) + plot_annotation(
-  title = "BHM with AR(1) structure for both the R and T equations",
+  title = "GMST Reconstruction using a Reduced Proxy",
   subtitle = sub_txt
 ) &
   theme(
@@ -490,4 +547,4 @@ p <- p_ts + p_hist + plot_layout(widths = c(4, 1)) + plot_annotation(
   )
 p
 
-ggsave(paste0(cfg$folder_paths$figures_dir,"/reconstruction_ts_8_LASSO_1900.png"), plot = p, width = 10, height = 5, units = "in", dpi = 300, bg = "white")
+ggsave(paste0(cfg$folder_paths$figures_dir,"/reconstruction_ts.png"), plot = p, width = 10, height = 5, units = "in", dpi = 300, bg = "white")
