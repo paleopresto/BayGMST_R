@@ -63,6 +63,7 @@ colnames(Temperatures.in) <- c("year","T","l95","u95")
 t1 <- cfg$partition_years$t1
 t2 <- cfg$partition_years$t2
 t3 <- cfg$partition_years$t3
+t4 <- cfg$partition_years$t4
 
 # validate ordering: t1 <= t2 <= t3
 # ------------------------------------------------------------
@@ -71,16 +72,42 @@ t3 <- cfg$partition_years$t3
 #   t1 = start of full reconstruction window
 #   t2 = start of instrumental period
 #   t3 = end of analysis window
-# with t1 <= t2 <= t3.
+#   t4 = end of future projections window
+# with t1 <= t2 <= t3 <= 4.
 # ------------------------------------------------------------
-if (anyNA(c(t1, t2, t3))) {
-  stop("t1/t2/t3 contains NA.")
+check_year <- function(x, name) {
+  if (is.null(x)) {
+    stop(sprintf("%s is missing.", name), call. = FALSE)
+  }
+  if (
+    !is.numeric(x) ||
+    length(x) != 1 ||
+    is.na(x) ||
+    !is.finite(x) ||
+    x <= 0 ||
+    x != as.integer(x)
+  ) {
+    stop(sprintf("%s must be a single positive integer.", name), call. = FALSE)
+  }
 }
-if (!is.numeric(t1) || !is.numeric(t2) || !is.numeric(t3)) {
-  stop("t1/t2/t3 must be numeric.")
-}
+check_year(t1, "t1")
+check_year(t2, "t2")
+check_year(t3, "t3")
+
 if (!(t1 <= t2 && t2 <= t3)) {
   stop(sprintf("Invalid partition years: require t1 <= t2 <= t3, got t1=%s, t2=%s, t3=%s", t1, t2, t3))
+}
+if (!is.null(t4)){
+  check_year(t4, "t4")
+  if (anyNA(c(t4))) {
+    stop("t4 contains NA.")
+  }
+  if (!is.numeric(t4)) {
+    stop("t4 must be numeric.")
+  }
+  if (!(t3 < t4 && t4 <= 2100)) {
+    stop(sprintf("Invalid partition years: require t3 < t4 <= 2100, got t3=%s, t4=%s", t3, t4))
+  }
 }
 
 instru_year_min <- min(Temperatures.in$year, na.rm = TRUE)
@@ -133,7 +160,8 @@ df <- data.frame(
   R = Proxies.in$RP1[iP]          # reduced proxy
 )
 
-tail(df)
+#tail(df)
+#plot(df$year, df$V, type='l')
 
 ## quick missingness check by column
 colSums(is.na(df))
@@ -148,7 +176,6 @@ colSums(is.na(df))
 df$V <- -abs(vol_coef)*(1-exp(-df$V))
 df$G <- co2_coef*log(df$G/co2_c0)
 df$S <- df$S - mean(df$S)
-
 
 ### PREPARE DATA FOR STAN (VARIBALES BELOW ARE CONSISTENT WITH STAN CODE)
 # ------------------------------------------------------------
@@ -319,7 +346,7 @@ annot_x <- x_lim[2] - 0.01 * diff(x_lim)
 annot_y <- y_lim[1] + 0.05 * diff(y_lim)
 
 alpha_dark = 0.90
-alpha_lite = 0.30
+alpha_lite = 0.25
 
 p_ts <- ggplot() +
   geom_ribbon(

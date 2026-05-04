@@ -12,10 +12,11 @@ stan_params:
   iter_sampling: 5000 # must be greater than 1000
   
 partition_years:
-  # The script builds: years <- t1:t3
+  # The script builds: years <- t1:t3 OR years <- t1:t4
   t1: 1  # First year of the full modeling window.
   t2: 1850  # Start year of the instrumental-temperature period, years before t2 will have T = NA and be treated as missing.
   t3: 2000  # Final year of the full modeling window.
+  t4: 2100  # (Optional) Final year of projections, must be no larger than 2100 (start year of projections: t3+1); leave 'null' if projections are not desired.
 
 folder_paths:
   # Absolute path to your local CmdStan installation.

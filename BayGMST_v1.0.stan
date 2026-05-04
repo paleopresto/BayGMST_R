@@ -115,4 +115,6 @@ generated quantities {
     mu_help = mu_help * sigma_y_ins^2;
     y_ins_fitted[t] = normal_rng(mu_help, sigma_y_ins);
   }
+
+  // y future (projections)
 }
