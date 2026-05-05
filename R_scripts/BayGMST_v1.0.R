@@ -207,8 +207,10 @@ data_list <- list(
   S = as.vector(df$S),
   V = as.vector(df$V),
   y_obs = y_obs,
-  z = z
+  z = z,
+  NT_prj = if (is.null(t4)) 0L else as.integer(t4 - t3)
 )
+
 
 ### FIT BHM with STAN
 # ------------------------------------------------------------
@@ -239,7 +241,13 @@ elapsed_sec
 message("Done.")
 
 
-tail(fit$summary(variables = c("y_ins_fitted")))
+tail(fit$summary(variables = c("v_future")))
+
+
+v_draws <- fit$draws(variables = "v_future")
+v_one <- v_draws[1, 1, ]
+v_future_one <- as.numeric(v_one)
+plot(v_future_one, type='l')
 
 
 
