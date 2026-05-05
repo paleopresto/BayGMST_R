@@ -15,6 +15,10 @@ data {
   vector[NT] S; // solar irradiance
   vector[NT] V; // volcanic activity
 
+  vector[NT_prj] G_prj; // projected greenhouse gases (for future projections)
+  vector[NT_prj] S_prj; // projected solar irradiance (for future projections)
+  real vol_coef; // coefficient to scale the simulated volcanic activity for future projections (to match historical scale)
+
   // data
   vector[NT_obs] y_obs; // observed instrumental temperatures (T)
   vector[NT] z;         // proxy records (R)
@@ -50,7 +54,6 @@ transformed parameters {
 model {
   // #### priors ####
   // #### priors ####
-  // (Keep your priors from the previous code)
   alpha0 ~ normal(0, 0.5);
   alpha1 ~ normal(0, 0.5);
   sigma_z ~ exponential(1);
@@ -91,7 +94,8 @@ generated quantities {
   vector[NT] mu_y;              // fitted mean for y_t
   vector[NT_obs] y_ins_fitted;  // fitted temperature values for the instrumental period (for posterior predictive checks)
   real sigma_y_ins;             // effective noise for the fitted values during the instrumental period (combining process and proxy noise)
-  vector[NT_prj] v_future = rep_vector(0, NT_prj); // future volcanic forcing (for projections)
+  vector[NT_prj] V_prj = rep_vector(0, NT_prj); // future volcanic forcing (for projections)
+  vector[NT_prj] y_prj;      // future temperature projections (for projections)
 
   // y mean (conditional on realized y[t-1]) 
   mu_y[1] = mu_forcing[1];
@@ -165,15 +169,31 @@ generated quantities {
       }
     }
 
-    v_future = v_future + rep_vector(baseV, NT_prj); // add baseline volcanic activity to all future years
+    V_prj = V_prj + rep_vector(baseV, NT_prj); // add baseline volcanic activity to all future years
     for (t in 1:NT_prj) {
       for (i in 0:7) {
         if (t - i >= 1) {
-          v_future[t] += spikes_future[t - i] * Vdecay[i + 1];
+          V_prj[t] += spikes_future[t - i] * Vdecay[i + 1];
         }
       }
     }
-    // STILL NEED TO NORMALIZE v_future TO MATCH THE SCALE OF HISTORICAL V (CHECK THIS)
+
+    // normalize the simulated volcanic forcing to match the scale of historical volcanic forcing
+    for (t in 1:NT_prj) {
+      V_prj[t] = -abs(vol_coef) * (1 - exp(-V_prj[t]));
+      }
+  }
+
+  // future temperature projections (for projections)
+  if (NT_prj > 0){
+    vector[NT_prj] mu_forcing_prj;
+    mu_forcing_prj = beta0 + betaG * G_prj + betaS * S_prj + betaV * V_prj;
+
+    // project future temperatures using the AR(1) structure
+    y_prj[1] = normal_rng(phi_T * y[NT] + mu_forcing_prj[1], sigma_y);
+    for (t in 2:NT_prj) {
+      y_prj[t] = normal_rng(phi_T * y_prj[t-1] + mu_forcing_prj[t], sigma_y);
+    }
   }
 
 }

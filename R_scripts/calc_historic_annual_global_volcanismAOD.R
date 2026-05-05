@@ -72,6 +72,4 @@ legend(
 
 
 ?rgamma
-as.integer(rgamma(10, 2.16, 1/0.2))
-
-
+as.integer(rgamma(10, shape = 1.08, rate = 19.5))
