@@ -1,13 +1,15 @@
-// BayGMST_R_v1.0: AR(1) structure in the temperature and proxy equations
+// BayGMST_v0.3: Same as BayGMST_v0.1 + AR(1) structure in the temperature and proxy equations
 
 data {
   int<lower=1> NT;          // total time points
   int<lower=0> NT_obs;      // number of instrumental observations
   int<lower=0> NT_mis;      // number of missing years to reconstruct
+  int<lower=0> NT_cv;       // number of years in the cross-validation period
   
   // indices to map observed and missing data to the full time vector
   array[NT_obs] int<lower=1, upper=NT> idx_obs; 
   array[NT_mis] int<lower=1, upper=NT> idx_mis;
+  array[NT_cv]  int<lower=1, upper=NT> idx_cv;
 
   // climate forcings
   vector[NT] G; // greenhouse gases
@@ -15,8 +17,9 @@ data {
   vector[NT] V; // volcanic activity
 
   // data
-  vector[NT_obs] y_obs; // observed instrumental temperatures (T)
-  vector[NT] z;         // proxy records (R)
+  vector[NT_obs] y_obs;     // observed instrumental temperatures (T)
+  vector[NT_cv] y_cv_true;  // true temperature values for the cross-validation period
+  vector[NT] z;             // proxy records (R)
 }
 parameters {
   real alpha0;
@@ -87,31 +90,25 @@ model {
 }
 generated quantities {
   vector[NT] mu_y;              // fitted mean for y_t
-  vector[NT_obs] y_ins_fitted;  // fitted temperature values for the instrumental period (for posterior predictive checks)
-  real sigma_y_ins;             // effective noise for the fitted values during the instrumental period (combining process and proxy noise)
+  real mse_cv;                  // mean squared error for the cross-validation period
+  real r2_cv;                   // R-squared for the cross-validation period
+  real ss_res = 0;
+  real ss_tot = 0;
+  real y_bar = mean(y_cv_true);
 
   // y mean (conditional on realized y[t-1]) 
   mu_y[1] = mu_forcing[1];
   for (t in 2:NT)
     mu_y[t] = phi_T * y[t-1] + mu_forcing[t];
 
-  // y fitted values for the observed period (for PPCs)
-  sigma_y_ins = alpha1^2/sigma_z^2;
-  sigma_y_ins = sigma_y_ins + (1/sigma_y^2);
-  sigma_y_ins = inv_sqrt(sigma_y_ins);
-
-  for (t in 1:NT_obs){
-    real mu_help;
-    real mu_y_help;
-    if (t == 1){
-      mu_y_help = phi_T * y[NT_mis] + mu_forcing[idx_obs[t]];
-      mu_help = (mu_y_help/sigma_y^2) + (alpha1 * (z[idx_obs[t]] - phi_R*z[NT_mis])/sigma_z^2); // CHECK THIS LINE
-    }
-    else {
-      mu_y_help = phi_T * y_ins_fitted[t-1] + mu_forcing[idx_obs[t]];
-      mu_help = (mu_y_help/sigma_y^2) + (alpha1 * (z[idx_obs[t]] - phi_R*z[idx_obs[t-1]])/sigma_z^2);
-    }
-    mu_help = mu_help * sigma_y_ins^2;
-    y_ins_fitted[t] = normal_rng(mu_help, sigma_y_ins);
+  // cross-validation metrics
+  mse_cv = 0;
+  for (t in 1:NT_cv){
+    mse_cv += square(y_cv_true[t] - mu_y[idx_cv[t]]); // should be mu_y[idx_cv[t]] instead of y[idx_cv[t]]? CHECK THIS
+    ss_res += square(y_cv_true[t] - mu_y[idx_cv[t]]); // should be mu_y[idx_cv[t]] instead of y[idx_cv[t]]? CHECK THIS
+    ss_tot += square(y_cv_true[t] - y_bar);
   }
+
+r2_cv = 1 - (ss_res / ss_tot);
+
 }
