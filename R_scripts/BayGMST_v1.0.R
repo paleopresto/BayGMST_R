@@ -341,7 +341,13 @@ df_pred_out <- df_pred %>%
 
 df_combined <- dplyr::bind_rows(df_pred_out, df_ins_out) %>%
   dplyr::arrange(year)
-
+df_combined <- df_combined %>%
+  dplyr::rename(
+    T.lo.68CrI    = T.lo,
+    T.hi.68CrI    = T.hi,
+    T.lolo.95CrI  = T.lolo,
+    T.hihi.95CrI  = T.hihi
+  )
 write.csv(
   df_combined,
   file = paste0(cfg$folder_paths$output_dir, "/reconstructions/gmst_reconstruction_data.csv"),
