@@ -375,63 +375,33 @@ alpha_lite = 0.35
 
 p_ts <- ggplot() +
   geom_ribbon(
-    data = df_pred,
+    data = df_combined,
     aes(
       x = year,
-      ymin = T.lolo,
-      ymax = T.hihi,
-      fill = "95% Credible Band",
-      alpha = "95% Credible Band"
+      ymin = T.lolo.95CrI,
+      ymax = T.hihi.95CrI,
+      fill = "95% Post. Predictive Band",
+      alpha = "95% Post. Predictive Band"
     )
   ) +
   geom_ribbon(
-    data = df_pred,
+    data = df_combined,
     aes(
       x = year,
-      ymin = T.lo,
-      ymax = T.hi,
-      fill = "68% Credible Band",
-      alpha = "68% Credible Band"
+      ymin = T.lo.68CrI,
+      ymax = T.hi.68CrI,
+      fill = "68% Post. Predictive Band",
+      alpha = "68% Post. Predictive Band"
     )
   ) +
   geom_line(
-    data = df_pred, color = "cyan3",
-    aes(x = year, y = T.lolo),
+    data = df_combined, color = "cyan3",
+    aes(x = year, y = T.lolo.95CrI),
     alpha = 0.1
   ) +
   geom_line(
-    data = df_pred, color = "cyan3",
-    aes(x = year, y = T.hihi),
-    alpha = 0.1
-  ) +
-  geom_line(
-    data = df_pred,
-    aes(x = year, y = T.mean, color = "Reconstruction (Post. Mean)"),
-    linewidth = 0.55,
-    na.rm = TRUE
-  ) +
-  geom_ribbon(
-    data = df_ins,
-    aes(x = year, ymin = T.lo, ymax = T.hi,
-        fill = "68% Credible Band",
-        alpha = "69% Credible Band"),
-    na.rm = TRUE
-  ) +
-  geom_ribbon(
-    data = df_ins,
-    aes(x = year, ymin = T.lolo, ymax = T.hihi,
-        fill = "95% Credible Band",
-        alpha = "95% Credible Band"),
-    na.rm = TRUE
-  ) +
-  geom_line(
-    data = df_ins, color = "cyan3",
-    aes(x = year, y = T.lolo),
-    alpha = 0.1
-  ) +
-  geom_line(
-    data = df_ins, color = "cyan3",
-    aes(x = year, y = T.hihi),
+    data = df_combined, color = "cyan3",
+    aes(x = year, y = T.hihi.95CrI),
     alpha = 0.1
   ) +
   geom_line(
@@ -443,48 +413,49 @@ p_ts <- ggplot() +
   ) +
   geom_line(
     data = df_obs,
-    aes(x = year, y = T, color = "HadCRUT5 (Instrumental Observations)"),
+    aes(x = year, y = T, color = "HadCRUT5 (Instrumental Obs., 1961-1990 Ref.)"),
     linewidth = 0.30,
     na.rm = TRUE
   ) +
   geom_line(
-    data = df_ins,
-    aes(x = year, y = T.mean, color = "Reconstruction (Post. Mean)"),
+    data = df_combined,
+    aes(x = year, y = T.mean, color = "Reconstruction (Post. Predictive Mean)"),
     linewidth = 0.55,
-    alpha = 0.90,
     na.rm = TRUE
   ) +
   scale_color_manual(
     name = "",
     values = c(
-      "HadCRUT5 (Instrumental Observations)" = "orange",
-      "Reconstruction (Post. Mean)" = "darkorchid4"
+      "HadCRUT5 (Instrumental Obs., 1961-1990 Ref.)" = "orange",
+      "Reconstruction (Post. Predictive Mean)" = "darkorchid4"
     )
   ) +
   scale_fill_manual(
     name = "",
     values = c(
-      "95% Credible Band" = "cyan3",
-      "68% Credible Band" = "cyan3"
+      "95% Post. Predictive Band" = "cyan3",
+      "68% Post. Predictive Band" = "cyan3"
     )
   ) +
   scale_alpha_manual(
     name = "",
     values = c(
-      "95% Credible Band" = alpha_lite,
-      "68% Credible Band" = alpha_dark
+      "95% Post. Predictive Band" = alpha_lite,
+      "68% Post. Predictive Band" = alpha_dark
     )
   )  +
   guides(
     alpha = "none",
     color = guide_legend(
       byrow = TRUE,
-      keyheight = unit(0.55, "lines")
+      keyheight = unit(0.55, "lines"),
+      order = 1
     ), 
     fill = guide_legend(
       override.aes = list(
         alpha = c(alpha_dark, alpha_lite)
-      ), keyheight = unit(0.55, "lines")
+      ), keyheight = unit(0.55, "lines"),
+      order = 2
     )
   ) +
   coord_cartesian(xlim = x_lim, ylim = y_lim) +
@@ -500,11 +471,12 @@ p_ts <- ggplot() +
   labs(x = "Year CE", y = "GMST Anomaly (°C)") +
   theme_light(base_size = 11) +
   theme(
-    legend.position = c(0.01, 0.63),
+    legend.position = c(0.01, 0.70),
     legend.justification = c(0, 0),
     legend.background = element_rect(fill = NA, color = NA),
     legend.title = element_text(hjust = 0.5),
-    legend.spacing.y = unit(0.01, "lines")
+    legend.spacing.y = unit(0.01, "lines"),
+    legend.margin = margin(0,0,0,0)
   )
 
 p_ts
@@ -694,6 +666,6 @@ p <- p_ts + p_hist + plot_layout(heights = c(5, 1)) + plot_annotation(
   )
 p
 
-ggsave(paste0(cfg$folder_paths$figures_dir,"/reconstruction_ts.png"), plot = p, width = 8.5, height = 5, units = "in", dpi = 300, bg = "white")
+ggsave(paste0(cfg$folder_paths$figures_dir,"/reconstruction_ts.png"), plot = p, width = 7, height = 5, units = "in", dpi = 300, bg = "white")
 
 

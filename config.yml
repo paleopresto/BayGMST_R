@@ -1,6 +1,6 @@
 # Method used to choose which reduced-proxy CSV to load.
 # Must be one of: "LASSO", "PCR", "sPCR", "SIR", "SPLS".
-rp_method: "LASSO"
+rp_method: "SPLS"
 
 ptype: "ALL" # "ALL", "lake", "speleothem", "ice", "borehole", "tree", "documents", "hybrid", "marine", "coral", "bivalve"
 
@@ -13,7 +13,7 @@ stan_params:
   
 partition_years:
   # The script builds: years <- t1:t3 OR years <- t1:t4
-  t1: 1001  # First year of the full modeling window.
+  t1: 501  # First year of the full modeling window.
   t2: 1850  # Start year of the instrumental-temperature period, years before t2 will have T = NA and be treated as missing.
   t3: 2000  # Final year of the full modeling window.
 
