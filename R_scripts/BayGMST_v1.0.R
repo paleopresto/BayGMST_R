@@ -53,8 +53,12 @@ load_proxies <- function(rp_method = c("LASSO", "PCR", "SIR", "SPLS"),
 # Also pull the reconstruction / calibration window from the
 # config file.
 # ------------------------------------------------------------
-rp_method        <- cfg$rp_method
-Proxies.in       <- load_proxies(rp_method)
+if (cfg$ptype == 'ALL_cached_Barboza'){ # cached reduced proxy by Barboza et al. 2019
+  Proxies.in       <- load_proxies(cfg$rp_method)
+}else{  # compute a new reduced proxy
+  source("utils/PAGES2k_reducedProxy_UNSC.R")
+  Proxies.in       <- read.csv('data/RPind.csv')
+}
 Forcings.in      <- read.csv(cfg$folder_paths$forcings_path)
 Forcings.in$year <- as.integer(rownames(Forcings.in))
 Temperatures.in  <- read.csv(cfg$folder_paths$instr_temp_path)
@@ -558,13 +562,21 @@ alpha_params <- c('alphaT')
 beta_params  <- c("betaG", "betaV", "betaS")
 phi_params   <- c("phi_R", "phi_T")
 
-coefs_min <- df_hist %>%
-  dplyr::filter(!parameter %in% phi_params) %>%
+alphas_min <- df_hist %>%
+  dplyr::filter(parameter %in% alpha_params) %>%
   dplyr::summarise(mn = min(value, na.rm = TRUE)) %>%
   dplyr::pull(mn)
+alphas_max <- df_hist %>%
+  dplyr::filter(parameter %in% alpha_params) %>%
+  dplyr::summarise(mx = max(value, na.rm = TRUE)) %>%
+  dplyr::pull(mx)
 
-coefs_max <- df_hist %>%
-  dplyr::filter(!parameter %in% phi_params) %>%
+betas_min <- df_hist %>%
+  dplyr::filter(parameter %in% beta_params) %>%
+  dplyr::summarise(mn = min(value, na.rm = TRUE)) %>%
+  dplyr::pull(mn)
+betas_max <- df_hist %>%
+  dplyr::filter(parameter %in% beta_params) %>%
   dplyr::summarise(mx = max(value, na.rm = TRUE)) %>%
   dplyr::pull(mx)
 
@@ -631,13 +643,13 @@ p_alpha <- df_hist %>%
   dplyr::filter(parameter %in% alpha_params) %>%
   base_hist_overlay(
     xlab = expression("Signed RP-T Coefficient ("*degree*C^{-1}*")")) +
-  coord_cartesian(xlim = c(coefs_min, coefs_max))
+  coord_cartesian(xlim = c(alphas_min, alphas_max))
 
 p_beta <- df_hist %>%
   dplyr::filter(parameter %in% beta_params) %>%
   base_hist_overlay(xlab = expression("Forcing Sensitivity ("*degree*C~m^2~W^{-1}*")"), 
                     ylab = "") +
-  coord_cartesian(xlim = c(coefs_min, coefs_max))
+  coord_cartesian(xlim = c(betas_min, betas_max))
 
 p_phi <- df_hist %>%
   dplyr::filter(parameter %in% phi_params) %>%
@@ -654,7 +666,7 @@ p_hist <- p_alpha | p_beta | p_phi
 # ------------------------------------------------------------
 sub_txt <- sprintf(
   "Instrumental period: (%s, %s);  RP computed via %s;  AR(1) structure in T and R equations",
-  t2, t3, rp_method
+  t2, t3, cfg$rp_method
 )
 p <- p_ts + p_hist + plot_layout(heights = c(5, 1)) + plot_annotation(
   title = "GMST Reconstruction using a Reduced Proxy",
