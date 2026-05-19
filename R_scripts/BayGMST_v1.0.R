@@ -665,8 +665,8 @@ p_hist <- p_alpha | p_beta | p_phi
 # panels into one final figure with a descriptive subtitle.
 # ------------------------------------------------------------
 sub_txt <- sprintf(
-  "Instrumental period: (%s, %s);  RP computed via %s;  AR(1) structure in T and R equations",
-  t2, t3, cfg$rp_method
+  "Instrumental period: (%s, %s);  RP computed via %s;  Proxy type: %s; AR(1) in T and R equations",
+  t2, t3, cfg$rp_method, cfg$ptype
 )
 p <- p_ts + p_hist + plot_layout(heights = c(5, 1)) + plot_annotation(
   title = "GMST Reconstruction using a Reduced Proxy",
@@ -674,7 +674,7 @@ p <- p_ts + p_hist + plot_layout(heights = c(5, 1)) + plot_annotation(
 ) &
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    plot.subtitle = element_text(hjust = 0.5, size = 11)
+    plot.subtitle = element_text(hjust = 0.5, size = 9)
   )
 p
 

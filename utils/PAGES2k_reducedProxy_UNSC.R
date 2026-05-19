@@ -91,7 +91,8 @@ histogram_first
 
 
 # define analysis options
-RP_style = "LASSO" #cfg$rp_method  #possible choices: "PCR", "LASSO", "SIR", "SPLS" #### EDIT THIS YML!!!
+RP_style = cfg$rp_method  #possible choices: "PCR", "LASSO", "SIR", "SPLS" #### EDIT THIS YML!!!
+print(paste0('Method to compute RP: ', RP_style))
 ## DEFINE FUNCTIONS USED LATER
 #define function %!in% which is same as ~ismember
 '%!in%' <- function(x,y)!('%in%'(y,x))
@@ -130,7 +131,8 @@ temp_lastc <- temp[which(temp[,1]%in%calib),2] #last century temperature
 
 #evalues=matrix(1,1,npcs)#Initialise a matrix to store the eigenvalues of PCs
 coefflist <- list()
-npcs <- c(11,13,9,11,7,12,10,6) #first PC whose adjusted R2 > 70%
+#npcs <- c(11,13,9,11,7,12,10,6) #first PC whose adjusted R2 > 70% THIS WAS HARDCODED LIKE THIS ORIGINALLY
+target_adj_r2 <- 0.70
 limitup <- c(1,2,2,2,2,1,1,2) ##Marginal Dimension Tests (SIR)
 nslicesv <- c(5,7)
 proport <- c(1,1,1,1,1,0.35,0.6,0.75)
@@ -158,11 +160,32 @@ for (k in 1:ns){   # loop over segments
   proxy_finite[!is.finite(proxy_finite)]=0
   nprox[k] = dim(proxy_finite)[2]
   
-  if (RP_style=="PCR") { 
-      pca=prcomp(proxy_finite)
-      a <- lm(temp_lastc~pca$x[rfind(timeSpan %in% calib),1:npcs[k]])
-      coeff <- as.numeric(a$coefficients)
-      RP[timeSpan,k]   = cbind(one,pca$x[,1:npcs[k]])%*%coeff
+  if (RP_style == "PCR") {
+    pca <- prcomp(proxy_finite, center = FALSE, scale. = FALSE)
+    calib_idx <- rfind(timeSpan %in% calib)
+    if (length(temp_lastc) != length(calib_idx)) {
+      stop("Calibration temperature and proxy calibration rows do not have the same length.")
+    }
+    npcs_max <- min(
+      ncol(pca$x),
+      length(temp_lastc) - 2
+    )
+    adj_r2 <- sapply(1:npcs_max, function(j) {
+      pc_calib <- pca$x[calib_idx, 1:j, drop = FALSE]
+      summary(lm(temp_lastc ~ pc_calib))$adj.r.squared
+    })
+    hits <- which(adj_r2 >= target_adj_r2)
+    if (length(hits) > 0) {
+      npcs_help <- hits[1]
+    } else {
+      npcs_help <- which.max(adj_r2)
+    }
+    show(paste("Segment", k, "using", npcs_help, "PCs; adj R2 =", round(adj_r2[npcs_help], 3)))
+    pc_calib <- pca$x[calib_idx, 1:npcs_help, drop = FALSE]
+    pc_all <- pca$x[, 1:npcs_help, drop = FALSE]
+    a <- lm(temp_lastc ~ pc_calib)
+    coeff <- as.numeric(a$coefficients)
+    RP[timeSpan, k] <- cbind(one, pc_all) %*% coeff
   }
   if (RP_style=="sPCR") {
     datapc <- list(x=t(proxy_finite[rfind(timeSpan %in% calib),]),y=temp_lastc)
@@ -245,6 +268,14 @@ RPind <- data.frame(
   RP1 = apply(RP[, -1], 1, function(x) mean(x, na.rm = TRUE))
 )
 write.csv(RPind, here("data", "RPind.csv"), row.names = FALSE)
-plot(RPind$Year, RPind$RP1, type='l')
+fig_path <- file.path(cfg$folder_paths$figures_dir, "RP_ts.png")
+png(filename = fig_path, width = 1200, height = 700, res = 150)
+plot(RPind$Year, RPind$RP1, type = "l",
+     xlab = "Year", ylab = "RP1")
+dev.off()
 head(RPind)
+
+
+
+
 
