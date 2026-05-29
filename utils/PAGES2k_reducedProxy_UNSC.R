@@ -150,16 +150,29 @@ for (k in 1:ns){   # loop over segments
   timeSpan  = rfind(tce>=tMin)
   nt = length(timeSpan)
   one=matrix(1,nt,1)#Initialise a ny*1 one matrix that can be later appended to PC matrix
-  proxy_finite= proxy_filled[timeSpan,segProxies]
+  # drop = FALSE keeps a single-proxy segment a matrix; otherwise R collapses it
+  # to a vector and the apply(..., MARGIN = 2) calls below fail with
+  # "dim(X) must have a positive length".
+  proxy_finite= proxy_filled[timeSpan,segProxies, drop = FALSE]
   cleanNANs <- apply(X = proxy_finite,MARGIN = 2,function(x) sum(is.na(x))/dim(proxy_finite)[1])<0.05
-  proxy_finite <- proxy_finite[,cleanNANs]
+  proxy_finite <- proxy_finite[,cleanNANs, drop = FALSE]
   time_calib <- rfind(timeSpan %in% calib)
-  proxy_finite_calib= proxy_finite[time_calib,]
+  proxy_finite_calib= proxy_finite[time_calib, , drop = FALSE]
   cleanNANs_calib <- apply(X = proxy_finite_calib,MARGIN = 2,function(x) sum(is.na(x))/dim(proxy_finite_calib)[1])<0.05
-  proxy_finite <- proxy_finite[,cleanNANs_calib]
+  proxy_finite <- proxy_finite[,cleanNANs_calib, drop = FALSE]
   proxy_finite[!is.finite(proxy_finite)]=0
   nprox[k] = dim(proxy_finite)[2]
-  
+
+  # Guard sparse segments: a PCR/LASSO/SIR/SPLS fit needs at least 2 proxies.
+  # With fewer, the dimensionality reduction is degenerate and downstream
+  # matrix algebra breaks. Skip the segment (its RP column stays NA, which the
+  # final na.rm row-mean composite tolerates) instead of crashing.
+  if (nprox[k] < 2) {
+    message(sprintf("[RP] segment %d has %d usable proxy(ies) (<2) for ptype '%s'; skipping.",
+                    k, nprox[k], cfg$ptype))
+    next
+  }
+
   if (RP_style == "PCR") {
     pca <- prcomp(proxy_finite, center = FALSE, scale. = FALSE)
     calib_idx <- rfind(timeSpan %in% calib)
