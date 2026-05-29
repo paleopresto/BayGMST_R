@@ -196,6 +196,12 @@ for (k in 1:ns){   # loop over segments
     next
   }
 
+  # Wrap the per-segment fit so a numerical failure in any method (e.g. superpc
+  # for sPCR or dr for SIR on a segment with too few effective proxies) is logged
+  # and the segment skipped (its RP column left NA) rather than aborting the whole
+  # run. The final all-NA guard still catches the case where no segment succeeds.
+  tryCatch({
+
   if (RP_style == "PCR") {
     pca <- prcomp(proxy_finite, center = FALSE, scale. = FALSE)
     calib_idx <- rfind(timeSpan %in% calib)
@@ -279,6 +285,11 @@ for (k in 1:ns){   # loop over segments
     SPLSmodel <- spls(x = Xmatrix,y = temp_lastc,K = cvspls$K.opt,eta = cvspls$eta.opt)
     RP[timeSpan,k] <- predict.spls(SPLSmodel,newx = proxy_finite)
   }
+
+  }, error = function(e) {
+    message(sprintf("[RP] segment %d (%s, %d proxies) failed: %s; skipping (RP column left NA).",
+                    k, RP_style, nprox[k], conditionMessage(e)))
+  })
 }
 
 # If no segment populated RP it is entirely NA and the composite below would be
