@@ -1,23 +1,22 @@
 # Method used to choose which reduced-proxy CSV to load.
 # Must be one of: "LASSO", "PCR", "sPCR", "SIR", "SPLS".
-#     Note: SIR feature is still under construction!
-rp_method: "PCR"
+rp_method: "LASSO"
 
-ptype: "ALL_cached_Barboza" # "ALL", "ALL_cached_Barboza", "lake", "speleothem", "ice", "borehole", "tree", "documents", "hybrid", "marine", "coral", "bivalve"
-  # "ALL_cached_Barboza" are the pre-computed proxies by Barboza et al. (2019) by rp_method.
-  
+ptype: "ALL" # "ALL", "lake", "speleothem", "ice", "borehole", "tree", "documents", "hybrid", "marine", "coral", "bivalve"
+
 stan_params:
   # Number of warmup / adaptation iterations per chain
   iter_warmup: 500
 
   # Number of post-warmup sampling iterations per chain
-  iter_sampling: 1500 # must be greater than 1000
+  iter_sampling: 2500 # must be greater than 1000
   
 partition_years:
   # The script builds: years <- t1:t3 OR years <- t1:t4
-  t1: 1001  # First year of the full modeling window.
+  t1: 1  # First year of the full modeling window.
   t2: 1850  # Start year of the instrumental-temperature period, years before t2 will have T = NA and be treated as missing.
   t3: 2000  # Final year of the full modeling window.
+  t4: 2100  # (Optional) Final year of projections, must be no larger than 2100 (start year of projections: t3+1); leave 'null' if projections are not desired.
 
 folder_paths:
   # Absolute path to your local CmdStan installation.

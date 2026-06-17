@@ -9,7 +9,7 @@
 #   5. Prepares the data list required by the Stan model
 #   6. Fits the Bayesian hierarchical model with CmdStan
 #   7. Saves posterior summaries
-#   8. Produces a reconstruction figure and posterior histograms.
+#   8. Produces a reconstruction figure and posterior histograms
 # ============================================================
 
 library(config)
@@ -53,12 +53,8 @@ load_proxies <- function(rp_method = c("LASSO", "PCR", "SIR", "SPLS"),
 # Also pull the reconstruction / calibration window from the
 # config file.
 # ------------------------------------------------------------
-if (cfg$ptype == 'ALL_cached_Barboza'){ # cached reduced proxy by Barboza et al. 2019
-  Proxies.in       <- load_proxies(cfg$rp_method)
-}else{  # compute a new reduced proxy
-  source("utils/PAGES2k_reducedProxy_UNSC.R")
-  Proxies.in       <- read.csv('data/RPind.csv')
-}
+rp_method        <- cfg$rp_method
+Proxies.in       <- load_proxies(rp_method)
 Forcings.in      <- read.csv(cfg$folder_paths$forcings_path)
 Forcings.in$year <- as.integer(rownames(Forcings.in))
 Temperatures.in  <- read.csv(cfg$folder_paths$instr_temp_path)
@@ -67,6 +63,7 @@ colnames(Temperatures.in) <- c("year","T","l95","u95")
 t1 <- cfg$partition_years$t1
 t2 <- cfg$partition_years$t2
 t3 <- cfg$partition_years$t3
+t4 <- cfg$partition_years$t4
 
 # validate ordering: t1 <= t2 <= t3
 # ------------------------------------------------------------
@@ -75,7 +72,8 @@ t3 <- cfg$partition_years$t3
 #   t1 = start of full reconstruction window
 #   t2 = start of instrumental period
 #   t3 = end of analysis window
-# with t1 <= t2 <= t3.
+#   t4 = end of future projections window
+# with t1 <= t2 <= t3 <= 4.
 # ------------------------------------------------------------
 check_year <- function(x, name) {
   if (is.null(x)) {
@@ -98,6 +96,18 @@ check_year(t3, "t3")
 
 if (!(t1 <= t2 && t2 <= t3)) {
   stop(sprintf("Invalid partition years: require t1 <= t2 <= t3, got t1=%s, t2=%s, t3=%s", t1, t2, t3))
+}
+if (!is.null(t4)){
+  check_year(t4, "t4")
+  if (anyNA(c(t4))) {
+    stop("t4 contains NA.")
+  }
+  if (!is.numeric(t4)) {
+    stop("t4 must be numeric.")
+  }
+  if (!(t3 < t4 && t4 <= 2100)) {
+    stop(sprintf("Invalid partition years: require t3 < t4 <= 2100, got t3=%s, t4=%s", t3, t4))
+  }
 }
 
 instru_year_min <- min(Temperatures.in$year, na.rm = TRUE)
@@ -154,6 +164,15 @@ df <- data.frame(
 colSums(is.na(df))
 
 
+
+# REPLACE LATER: add in projections for CO2 and solar
+Forcings.projections <- read.csv('/Users/tylerbagwell/Documents/GitHub/BayGMST_R/data/forcings_with_prediction_HanWang.csv')
+tail(Forcings.projections)
+df_prj <- subset(Forcings.projections, year %in% seq(2001,2100,1))
+head(Forcings.projections)
+
+
+
 ### NORMALIZE
 # ------------------------------------------------------------
 # Apply the forcing transformations used by the model:
@@ -164,6 +183,13 @@ colSums(is.na(df))
 df$V <- -abs(vol_coef)*(1-exp(-df$V))
 df$G <- co2_coef*log(df$G/co2_c0)
 df$S <- df$S - mean(df$S)
+
+df_prj$solar <- df_prj$solar - mean(df_prj$solar)
+df_prj$CO2_RCP_2.6 <- co2_coef*log(df_prj$CO2_RCP_2.6/co2_c0)
+df_prj$CO2_RCP_4.5 <- co2_coef*log(df_prj$CO2_RCP_4.5/co2_c0)
+df_prj$CO2_RCP_6.0 <- co2_coef*log(df_prj$CO2_RCP_6.0/co2_c0)
+df_prj$CO2_RCP_8.5 <- co2_coef*log(df_prj$CO2_RCP_8.5/co2_c0)
+
 
 ### PREPARE DATA FOR STAN (VARIBALES BELOW ARE CONSISTENT WITH STAN CODE)
 # ------------------------------------------------------------
@@ -195,7 +221,11 @@ data_list <- list(
   S = as.vector(df$S),
   V = as.vector(df$V),
   y_obs = y_obs,
-  z = z
+  z = z,
+  NT_prj = if (is.null(t4)) 0L else as.integer(t4 - t3),
+  G_prj = as.vector(df_prj$CO2_RCP_8.5),
+  S_prj = as.vector(df_prj$solar),
+  vol_coef = vol_coef
 )
 
 
@@ -229,7 +259,49 @@ message("Done.")
 
 
 
+
+#### NEED TO CHANGE: volcanism projections plotting
+plot(df$year, df$V, type='l')
+
+tail(fit$summary(variables = c("V_prj")))
+v_draws <- fit$draws(variables = "V_prj")
+v_one <- v_draws[1, 1, ]
+v_future_one <- as.numeric(v_one)
+v_future_one
+plot(v_future_one, type='l')
+
+library(posterior)
+library(dplyr)
+library(tidyr)
+v_mat <- as_draws_matrix(v_draws)
+set.seed(123)
+draw_ids <- sample(seq_len(nrow(v_mat)), 9)
+
+df_v9 <- v_mat[draw_ids, , drop = FALSE] |>
+  as.data.frame() |>
+  mutate(realization = paste0("Realization ", row_number())) |>
+  pivot_longer(
+    cols = starts_with("V_prj["),
+    names_to = "variable",
+    values_to = "V_prj"
+  ) |>
+  mutate(
+    year_idx = as.integer(gsub("V_prj\\[|\\]", "", variable))
+  )
+
+v_plot <- ggplot(df_v9, aes(x = year_idx, y = V_prj)) +
+  geom_line(linewidth = 0.5, color = "black") +
+  facet_wrap(~ realization, ncol = 3) +
+  labs(
+    x = "Projection year index",
+    y = "V_prj (after transformation)"
+  ) +
+  theme_light(base_size = 12)
+
+ggsave(paste0(cfg$folder_paths$figures_dir,"/V_prj.png"), plot = v_plot, width = 8, height = 5, units = "in", dpi = 300, bg = "white")
 ####
+
+fit$summary(variables = "y_prj")
 
 obs_idx <- !is.na(df$T)
 y_ins_summary <- fit$summary(variables = "y_ins_fitted")
@@ -266,6 +338,11 @@ res_obs_dt  <- residuals(lm(T.obs  ~ year, data = dt_dat))
 R2_dt <- cor(res_obs_dt, res_mean_dt)^2
 
 
+plot(df_ins$year, df_ins$T.mean, type='l', col='red', lwd=2.0, lty=1, ylim=c(-0.7, +0.5))
+lines(df_ins$year, df_ins$T.lolo,  type='l', col='red', lwd=1.5, lty=5)
+lines(df_ins$year, df_ins$T.hihi, type='l', col='red', lwd=1.5, lty=5)
+lines(df_ins$year, df_ins$T.obs, Temps_inst$T, type='l', col='black', lwd=1.0, lty=1)
+
 # residual analysis
 png(
   filename = paste0(cfg$folder_paths$figures_dir, "/acf_pacf_fitted_residuals.png"),
@@ -281,6 +358,27 @@ acf(df_ins$resid, na.action = na.pass, main = "ACF of fitted residuals")
 pacf(df_ins$resid, na.action = na.pass, main = "PACF of fitted residuals")
 par(mfrow = c(1, 1))
 dev.off()
+
+
+# temperature projections
+y_prj_summary <- fit$summary(variables = "y_prj")
+y_prj_summary <- fit$summary(
+  variables = "y_prj",
+  ~posterior::quantile2(.x, probs = c(0.025, 0.160, 0.840, 0.975)),
+  "mean"
+)
+df_prj <- data.frame(
+  year   = t3 + seq(1,100,1),
+  T.mean = y_prj_summary$mean,
+  T.lo   = y_prj_summary$q16,
+  T.hi   = y_prj_summary$q84,
+  T.lolo = y_prj_summary$q2.5,
+  T.hihi = y_prj_summary$q97.5
+)
+
+plot(df_prj$year, df_prj$T.mean, type='l', col='red', lwd=2.0, lty=1, ylim=c(-0.1, +2.0))
+lines(df_prj$year, df_prj$T.lolo,  type='l', col='red', lwd=1.5, lty=5)
+lines(df_prj$year, df_prj$T.hihi, type='l', col='red', lwd=1.5, lty=5)
 
 
 # posterior summaries for parameters
@@ -318,44 +416,16 @@ y1_post    <- cbind(
 
 df_pred <- data.frame(
   year = as.numeric(idx_mis + t1),
-  T.mean = as.numeric(y1_post[, "mean"]),
-  T.lo   = as.numeric(y1_post[, "lo"]),
-  T.hi   = as.numeric(y1_post[, "hi"]),
-  T.lolo   = as.numeric(y1_post[, "lolo"]),
-  T.hihi   = as.numeric(y1_post[, "hihi"])
+  mean = as.numeric(y1_post[, "mean"]),
+  lo   = as.numeric(y1_post[, "lo"]),
+  hi   = as.numeric(y1_post[, "hi"]),
+  lolo   = as.numeric(y1_post[, "lolo"]),
+  hihi   = as.numeric(y1_post[, "hihi"])
 )
 
 df_obs <- data.frame(
   year = as.numeric(idx_obs + t1),
   T    = as.numeric(y_obs)
-)
-
-# save time series data as csv
-df_ins_out <- df_ins %>%
-  dplyr::mutate(type = "instrumental")
-
-df_pred_out <- df_pred %>%
-  dplyr::mutate(
-    T.obs = NA_real_,
-    type = "reconstruction"
-  ) %>%
-  dplyr::select(
-    year, T.obs, T.mean, T.lo, T.hi, T.lolo, T.hihi, type
-  )
-
-df_combined <- dplyr::bind_rows(df_pred_out, df_ins_out) %>%
-  dplyr::arrange(year)
-df_combined <- df_combined %>%
-  dplyr::rename(
-    T.lo.68CrI    = T.lo,
-    T.hi.68CrI    = T.hi,
-    T.lolo.95CrI  = T.lolo,
-    T.hihi.95CrI  = T.hihi
-  )
-write.csv(
-  df_combined,
-  file = paste0(cfg$folder_paths$output_dir, "/reconstructions/gmst_reconstruction_data.csv"),
-  row.names = FALSE
 )
 
 # time series of reconstructions
@@ -367,45 +437,76 @@ write.csv(
 # ------------------------------------------------------------
 x_lim <- range(c(df_pred$year, df_obs$year, df_ins$year), na.rm = TRUE)
 y_lim <- range(
-  c(df_obs$T, df_pred$T.lolo, df_pred$T.hihi, df_ins$T.lolo, df_ins$T.hihi),
+  c(df_obs$T, df_pred$lolo, df_pred$hihi, df_ins$T.lolo, df_ins$T.hihi),
   na.rm = TRUE
 )
-r2_label <- sprintf("Instrumental Period R² (detrended) = %.2f (%.2f)", perf_stats$R2, R2_dt)
+r2_label <- sprintf("Instrumental Period R² = %.2f", perf_stats$R2)
+r2_label_dt <- sprintf("Instrumental Period R² (detrended) = %.2f", R2_dt)
 annot_x <- x_lim[2] - 0.01 * diff(x_lim)
-annot_y <- y_lim[1] + 0.02 * diff(y_lim)
+annot_y <- y_lim[1] + 0.05 * diff(y_lim)
 
 alpha_dark = 0.95
 alpha_lite = 0.35
 
 p_ts <- ggplot() +
   geom_ribbon(
-    data = df_combined,
+    data = df_pred,
     aes(
       x = year,
-      ymin = T.lolo.95CrI,
-      ymax = T.hihi.95CrI,
-      fill = "95% Post. Predictive Band",
-      alpha = "95% Post. Predictive Band"
+      ymin = lolo,
+      ymax = hihi,
+      fill = "95% Credible Band",
+      alpha = "95% Credible Band"
     )
   ) +
   geom_ribbon(
-    data = df_combined,
+    data = df_pred,
     aes(
       x = year,
-      ymin = T.lo.68CrI,
-      ymax = T.hi.68CrI,
-      fill = "68% Post. Predictive Band",
-      alpha = "68% Post. Predictive Band"
+      ymin = lo,
+      ymax = hi,
+      fill = "68% Credible Band",
+      alpha = "68% Credible Band"
     )
   ) +
   geom_line(
-    data = df_combined, color = "cyan3",
-    aes(x = year, y = T.lolo.95CrI),
+    data = df_pred, color = "cyan3",
+    aes(x = year, y = lolo),
     alpha = 0.1
   ) +
   geom_line(
-    data = df_combined, color = "cyan3",
-    aes(x = year, y = T.hihi.95CrI),
+    data = df_pred, color = "cyan3",
+    aes(x = year, y = hihi),
+    alpha = 0.1
+  ) +
+  geom_line(
+    data = df_pred,
+    aes(x = year, y = mean, color = "Reconstruction (Post. Mean)"),
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  geom_ribbon(
+    data = df_ins,
+    aes(x = year, ymin = T.lo, ymax = T.hi,
+        fill = "68% Credible Band",
+        alpha = "69% Credible Band"),
+    na.rm = TRUE
+  ) +
+  geom_ribbon(
+    data = df_ins,
+    aes(x = year, ymin = T.lolo, ymax = T.hihi,
+        fill = "95% Credible Band",
+        alpha = "95% Credible Band"),
+    na.rm = TRUE
+  ) +
+  geom_line(
+    data = df_ins, color = "cyan3",
+    aes(x = year, y = T.lolo),
+    alpha = 0.1
+  ) +
+  geom_line(
+    data = df_ins, color = "cyan3",
+    aes(x = year, y = T.hihi),
     alpha = 0.1
   ) +
   geom_line(
@@ -417,49 +518,48 @@ p_ts <- ggplot() +
   ) +
   geom_line(
     data = df_obs,
-    aes(x = year, y = T, color = "HadCRUT5 (Instrumental Obs., 1961-1990 Ref.)"),
+    aes(x = year, y = T, color = "HadCRUT5 (Instrumental Observations)"),
     linewidth = 0.30,
     na.rm = TRUE
   ) +
   geom_line(
-    data = df_combined,
-    aes(x = year, y = T.mean, color = "Reconstruction (Post. Predictive Mean)"),
+    data = df_ins,
+    aes(x = year, y = T.mean, color = "Reconstruction (Post. Mean)"),
     linewidth = 0.55,
+    alpha = 0.90,
     na.rm = TRUE
   ) +
   scale_color_manual(
     name = "",
     values = c(
-      "HadCRUT5 (Instrumental Obs., 1961-1990 Ref.)" = "orange",
-      "Reconstruction (Post. Predictive Mean)" = "darkorchid4"
+      "HadCRUT5 (Instrumental Observations)" = "orange",
+      "Reconstruction (Post. Mean)" = "darkorchid4"
     )
   ) +
   scale_fill_manual(
     name = "",
     values = c(
-      "95% Post. Predictive Band" = "cyan3",
-      "68% Post. Predictive Band" = "cyan3"
+      "95% Credible Band" = "cyan3",
+      "68% Credible Band" = "cyan3"
     )
   ) +
   scale_alpha_manual(
     name = "",
     values = c(
-      "95% Post. Predictive Band" = alpha_lite,
-      "68% Post. Predictive Band" = alpha_dark
+      "95% Credible Band" = alpha_lite,
+      "68% Credible Band" = alpha_dark
     )
   )  +
   guides(
     alpha = "none",
     color = guide_legend(
       byrow = TRUE,
-      keyheight = unit(0.55, "lines"),
-      order = 1
+      keyheight = unit(0.55, "lines")
     ), 
     fill = guide_legend(
       override.aes = list(
         alpha = c(alpha_dark, alpha_lite)
-      ), keyheight = unit(0.55, "lines"),
-      order = 2
+      ), keyheight = unit(0.55, "lines")
     )
   ) +
   coord_cartesian(xlim = x_lim, ylim = y_lim) +
@@ -470,17 +570,25 @@ p_ts <- ggplot() +
     label = r2_label,
     hjust = 1,
     vjust = 0,
-    size = 3.0
+    size = 3.5
+  ) +
+  annotate(
+    "text",
+    x = annot_x,
+    y = (annot_y-0.1),
+    label = r2_label_dt,
+    hjust = 1,
+    vjust = 0,
+    size = 3.5
   ) +
   labs(x = "Year CE", y = "GMST Anomaly (°C)") +
   theme_light(base_size = 11) +
   theme(
-    legend.position = c(0.01, 0.70),
+    legend.position = c(0.01, 0.63),
     legend.justification = c(0, 0),
     legend.background = element_rect(fill = NA, color = NA),
     legend.title = element_text(hjust = 0.5),
-    legend.spacing.y = unit(0.01, "lines"),
-    legend.margin = margin(0,0,0,0)
+    legend.spacing.y = unit(0.01, "lines")
   )
 
 p_ts
@@ -562,21 +670,13 @@ alpha_params <- c('alphaT')
 beta_params  <- c("betaG", "betaV", "betaS")
 phi_params   <- c("phi_R", "phi_T")
 
-alphas_min <- df_hist %>%
-  dplyr::filter(parameter %in% alpha_params) %>%
+coefs_min <- df_hist %>%
+  dplyr::filter(!parameter %in% phi_params) %>%
   dplyr::summarise(mn = min(value, na.rm = TRUE)) %>%
   dplyr::pull(mn)
-alphas_max <- df_hist %>%
-  dplyr::filter(parameter %in% alpha_params) %>%
-  dplyr::summarise(mx = max(value, na.rm = TRUE)) %>%
-  dplyr::pull(mx)
 
-betas_min <- df_hist %>%
-  dplyr::filter(parameter %in% beta_params) %>%
-  dplyr::summarise(mn = min(value, na.rm = TRUE)) %>%
-  dplyr::pull(mn)
-betas_max <- df_hist %>%
-  dplyr::filter(parameter %in% beta_params) %>%
+coefs_max <- df_hist %>%
+  dplyr::filter(!parameter %in% phi_params) %>%
   dplyr::summarise(mx = max(value, na.rm = TRUE)) %>%
   dplyr::pull(mx)
 
@@ -643,13 +743,13 @@ p_alpha <- df_hist %>%
   dplyr::filter(parameter %in% alpha_params) %>%
   base_hist_overlay(
     xlab = expression("Signed RP-T Coefficient ("*degree*C^{-1}*")")) +
-  coord_cartesian(xlim = c(alphas_min, alphas_max))
+  coord_cartesian(xlim = c(coefs_min, coefs_max))
 
 p_beta <- df_hist %>%
   dplyr::filter(parameter %in% beta_params) %>%
   base_hist_overlay(xlab = expression("Forcing Sensitivity ("*degree*C~m^2~W^{-1}*")"), 
                     ylab = "") +
-  coord_cartesian(xlim = c(betas_min, betas_max))
+  coord_cartesian(xlim = c(coefs_min, coefs_max))
 
 p_phi <- df_hist %>%
   dplyr::filter(parameter %in% phi_params) %>%
@@ -665,8 +765,8 @@ p_hist <- p_alpha | p_beta | p_phi
 # panels into one final figure with a descriptive subtitle.
 # ------------------------------------------------------------
 sub_txt <- sprintf(
-  "Instrumental period: (%s, %s);  RP computed via %s;  Proxy type: %s; AR(1) in T and R equations",
-  t2, t3, cfg$rp_method, cfg$ptype
+  "Instrumental period: (%s, %s);  RP computed via %s;  AR(1) structure in T and R equations",
+  t2, t3, rp_method
 )
 p <- p_ts + p_hist + plot_layout(heights = c(5, 1)) + plot_annotation(
   title = "GMST Reconstruction using a Reduced Proxy",
@@ -674,10 +774,325 @@ p <- p_ts + p_hist + plot_layout(heights = c(5, 1)) + plot_annotation(
 ) &
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    plot.subtitle = element_text(hjust = 0.5, size = 9)
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
   )
 p
 
-ggsave(paste0(cfg$folder_paths$figures_dir,"/reconstruction_ts.png"), plot = p, width = 7, height = 5, units = "in", dpi = 300, bg = "white")
+ggsave(paste0(cfg$folder_paths$figures_dir,"/reconstruction_ts.png"), plot = p, width = 8.5, height = 5, units = "in", dpi = 300, bg = "white")
+
+
+
+# ------------------------------------------------------------
+# Comparisons with borehole data
+# ------------------------------------------------------------
+df_borehole <- read.csv('/Users/tylerbagwell/Downloads/bootstrapping.csv')
+tail(df_borehole)
+
+# reference period
+ref_idx <- df_pred$year >= 1300 & df_pred$year <= 1700
+ref_mean <- mean(df_pred$mean[ref_idx], na.rm = TRUE)
+df_pred_ref <- df_pred
+df_pred_ref[, c("mean", "lo", "hi", "lolo", "hihi")] <-
+  df_pred_ref[, c("mean", "lo", "hi", "lolo", "hihi")] - ref_mean
+
+df_ins_ref <- df_ins
+df_ins_ref[, c("T.mean", "T.lo", "T.hi", "T.lolo", "T.hihi")] <-
+  df_ins_ref[, c("T.mean", "T.lo", "T.hi", "T.lolo", "T.hihi")] - ref_mean
+
+# low pass filter
+library(signal)
+cols <- c("mean", "lo", "hi", "lolo", "hihi")
+dt <- median(diff(df_pred_smooth$year))  # should be 1 for annual data
+cutoff_years <- 100
+order <- 4
+# Normalized cutoff frequency: cutoff / Nyquist
+W <- (1 / cutoff_years) / (1 / (2 * dt))
+bf <- butter(order, W, type = "low")
+df_pred_smooth <- df_pred_ref
+df_pred_smooth[paste0(cols, "_smooth")] <- lapply(df_pred_ref[cols], function(x) {
+  signal::filtfilt(bf, x)
+})
+
+cols <- c("T.mean", "T.lo", "T.hi", "T.lolo", "T.hihi")
+dt <- median(diff(df_ins_ref$year))  # should be 1 for annual data
+cutoff_years <- 100
+order <- 4
+# Normalized cutoff frequency: cutoff / Nyquist
+W <- (1 / cutoff_years) / (1 / (2 * dt))
+bf <- butter(order, W, type = "low")
+df_ins_smooth <- df_ins_ref
+df_ins_smooth[paste0(cols, "_smooth")] <- lapply(df_ins_ref[cols], function(x) {
+  signal::filtfilt(bf, x)
+})
+
+head(df_pred_smooth)
+
+p_bh_ts <- ggplot() +
+  geom_ribbon(
+    data = df_pred_ref,
+    aes(
+      x = year,
+      ymin = lolo,
+      ymax = hihi
+    ),
+    fill = "cyan3",
+    alpha = 0.30
+  ) +
+  geom_ribbon(
+    data = df_ins_ref,
+    aes(
+      x = year,
+      ymin = T.lolo,
+      ymax = T.hihi
+    ),
+    fill = "darkorange2",
+    alpha = 0.30
+  ) +
+  geom_ribbon(
+    data = df_borehole,
+    aes(
+      x = Year,
+      ymin = p2.5,
+      ymax = p97.5
+    ),
+    fill = "red",
+    alpha = 0.30
+  ) +
+  geom_line(
+    data = df_borehole,
+    aes(x = Year, y = p50),
+    color = "red",
+    alpha = 1
+  ) +
+  geom_line(
+    data = df_pred_ref,
+    aes(x = year, y = mean),
+    color = 'darkorchid4',
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  geom_line(
+    data = df_pred_smooth,
+    aes(x = year, y = mean_smooth),
+    color = 'magenta',
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  geom_line(
+    data = df_ins_ref,
+    aes(x = year, y = T.mean),
+    color = 'darkgreen',
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  geom_line(
+    data = df_ins_smooth,
+    aes(x = year, y = T.mean_smooth),
+    color = 'green',
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  labs(x = "year", y = "GMST Anomaly (°C)") +
+  theme_light(base_size = 10)
+
+p_bh_ts
+
+sub_txt <- sprintf(
+  "Reconstruction window: (%s, %s);  RP computed via %s;  AR(1) structure in T and R equations",
+  t1, t2, rp_method
+)
+p_bh <- p_bh_ts + plot_annotation(
+  title = "GMST: Our Reconstruction vs. Reconstruction via Cuesta-Valero Boreholes",
+  subtitle = sub_txt
+) &
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+p_bh
+
+ggsave(paste0(cfg$folder_paths$figures_dir,"/compare_to_bh_ts.png"), plot = p_bh, width = 7, height = 5, units = "in", dpi = 300, bg = "white")
+
+
+
+# ------------------------------------------------------------
+# Plot for GMST projections
+# ------------------------------------------------------------
+x_lim <- range(c(df_pred$year, df_ins$year, df_prj$year), na.rm = TRUE)
+y_lim <- range(
+  c(df_obs$T, df_pred$lolo, df_pred$hihi, df_ins$T.lolo, df_ins$T.hihi, df_prj$T.lolo, df_prj$T.hihi),
+  na.rm = TRUE
+)
+
+alpha_dark = 0.90
+alpha_lite = 0.25
+
+p_ts_rpj <- ggplot() +
+  geom_ribbon(
+    data = df_pred,
+    aes(
+      x = year,
+      ymin = lolo,
+      ymax = hihi,
+      fill = "95% Credible Band",
+      alpha = "95% Credible Band"
+    )
+  ) +
+  geom_ribbon(
+    data = df_pred,
+    aes(
+      x = year,
+      ymin = lo,
+      ymax = hi,
+      fill = "68% Credible Band",
+      alpha = "68% Credible Band"
+    )
+  ) +
+  geom_line(
+    data = df_pred, color = "cyan3",
+    aes(x = year, y = lolo),
+    alpha = 0.1
+  ) +
+  geom_line(
+    data = df_pred, color = "cyan3",
+    aes(x = year, y = hihi),
+    alpha = 0.1
+  ) +
+  geom_line(
+    data = df_pred,
+    aes(x = year, y = mean, color = "Pre-Instrumental Reconstruction (Post. Mean)"),
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  geom_ribbon(
+    data = df_ins,
+    aes(x = year, ymin = T.lo, ymax = T.hi),
+    fill = "darkorange3",
+    alpha = alpha_dark,
+    na.rm = TRUE
+  ) +
+  geom_ribbon(
+    data = df_ins,
+    aes(x = year, ymin = T.lolo, ymax = T.hihi),
+    fill = "darkorange2",
+    alpha = alpha_lite,
+    na.rm = TRUE
+  ) +
+  geom_line(
+    data = df_ins, color = "darkorange2",
+    aes(x = year, y = T.lolo),
+    alpha = 0.1
+  ) +
+  geom_line(
+    data = df_ins, color = "darkorange2",
+    aes(x = year, y = T.hihi),
+    alpha = 0.1
+  ) +
+  geom_ribbon(
+    data = df_prj,
+    aes(x = year, ymin = T.lo, ymax = T.hi),
+    fill = "goldenrod2",
+    alpha = alpha_dark,
+    na.rm = TRUE
+  ) +
+  geom_ribbon(
+    data = df_prj,
+    aes(x = year, ymin = T.lolo, ymax = T.hihi),
+    fill = "gold3",
+    alpha = alpha_lite,
+    na.rm = TRUE
+  ) +
+  geom_line(
+    data = df_prj, color = "gold3",
+    aes(x = year, y = T.lolo),
+    alpha = 0.1
+  ) +
+  geom_line(
+    data = df_prj, color = "gold3",
+    aes(x = year, y = T.hihi),
+    alpha = 0.1
+  ) +
+  geom_line(
+    data = df_prj,
+    aes(x = year, y = T.mean, color = "Projections (Post. Mean)"),
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  geom_line(
+    data = df_obs,
+    aes(x = year, y = T, color = "HadCRUT5 (Instrumental Observations)"),
+    linewidth = 0.55,
+    na.rm = TRUE
+  ) +
+  geom_line(
+    data = df_ins,
+    aes(x = year, y = T.mean, color = "Instrumental Reconstruction (Post. Mean)"),
+    linewidth = 0.55,
+    alpha = 0.90,
+    na.rm = TRUE
+  ) +
+  scale_color_manual(
+    name = "GMST Anomaly",
+    values = c(
+      "HadCRUT5 (Instrumental Observations)" = "grey20",
+      "Pre-Instrumental Reconstruction (Post. Mean)" = "darkorchid4",
+      "Instrumental Reconstruction (Post. Mean)" = "limegreen",
+      "Projections (Post. Mean)" = "red"
+    )
+  ) +
+  scale_fill_manual(
+    name = "",
+    values = c(
+      "95% Credible Band" = "cyan3",
+      "68% Credible Band" = "cyan3"
+    )
+  ) +
+  scale_alpha_manual(
+    name = "",
+    values = c(
+      "95% Credible Band" = alpha_lite,
+      "68% Credible Band" = alpha_dark
+    )
+  )  +
+  guides(
+    alpha = "none",
+    color = guide_legend(
+      byrow = TRUE,
+      keyheight = unit(0.55, "lines")
+    ), 
+    fill = guide_legend(
+      override.aes = list(
+        alpha = c(alpha_dark, alpha_lite)
+      ), keyheight = unit(0.55, "lines")
+    )
+  ) +
+  coord_cartesian(xlim = x_lim, ylim = y_lim) +
+  labs(x = "year", y = "GMST Anomaly (°C)") +
+  theme_light(base_size = 10) +
+  theme(
+    legend.position = c(0.01, 0.50),
+    legend.justification = c(0, 0),
+    legend.background = element_rect(fill = NA, color = NA),
+    legend.title = element_text(hjust = 0.5),
+    legend.spacing.y = unit(0.01, "lines")
+  )
+
+sub_txt <- sprintf(
+  "Instrumental window: (%s, %s);  RP computed via %s;  AR(1) structure in T and R equations",
+  t2, t3, rp_method
+)
+p_prj <- p_ts_rpj + plot_annotation(
+  title = "GMST Projections (2001-2100) for CO2_RCP_8.5",
+  subtitle = sub_txt
+) &
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    plot.subtitle = element_text(hjust = 0.5, size = 9)
+  )
+p_prj
+
+ggsave(paste0(cfg$folder_paths$figures_dir,"/projections_ts.png"), plot = p_prj, width = 7, height = 4, units = "in", dpi = 300, bg = "white")
+
+
 
 
