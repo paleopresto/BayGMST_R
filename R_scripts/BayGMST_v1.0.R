@@ -9,7 +9,7 @@
 #   5. Prepares the data list required by the Stan model
 #   6. Fits the Bayesian hierarchical model with CmdStan
 #   7. Saves posterior summaries
-#   8. Produces a reconstruction figure and posterior histograms
+#   8. Produces a reconstruction figure and posterior histograms.
 # ============================================================
 
 library(config)

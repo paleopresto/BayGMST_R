@@ -14,7 +14,7 @@ df = pdb.to_df()
 # Step 1: explode list-columns so each proxy-year is one row
 long_df = df[['pid', 'lat', 'lon', 'elev', 'ptype', 'time', 'value']].explode(
     ['time', 'value'],
-    ignore_index=True
+    ignore_index=True 
 )
 
 # Step 2: make sure types are numeric
