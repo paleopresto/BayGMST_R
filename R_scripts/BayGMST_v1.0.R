@@ -783,139 +783,6 @@ ggsave(paste0(cfg$folder_paths$figures_dir,"/reconstruction_ts.png"), plot = p, 
 
 
 # ------------------------------------------------------------
-# Comparisons with borehole data
-# ------------------------------------------------------------
-df_borehole <- read.csv('/Users/tylerbagwell/Downloads/bootstrapping.csv')
-tail(df_borehole)
-
-# reference period
-ref_idx <- df_pred$year >= 1300 & df_pred$year <= 1700
-ref_mean <- mean(df_pred$mean[ref_idx], na.rm = TRUE)
-df_pred_ref <- df_pred
-df_pred_ref[, c("mean", "lo", "hi", "lolo", "hihi")] <-
-  df_pred_ref[, c("mean", "lo", "hi", "lolo", "hihi")] - ref_mean
-
-df_ins_ref <- df_ins
-df_ins_ref[, c("T.mean", "T.lo", "T.hi", "T.lolo", "T.hihi")] <-
-  df_ins_ref[, c("T.mean", "T.lo", "T.hi", "T.lolo", "T.hihi")] - ref_mean
-
-# low pass filter
-library(signal)
-cols <- c("mean", "lo", "hi", "lolo", "hihi")
-dt <- median(diff(df_pred_smooth$year))  # should be 1 for annual data
-cutoff_years <- 100
-order <- 4
-# Normalized cutoff frequency: cutoff / Nyquist
-W <- (1 / cutoff_years) / (1 / (2 * dt))
-bf <- butter(order, W, type = "low")
-df_pred_smooth <- df_pred_ref
-df_pred_smooth[paste0(cols, "_smooth")] <- lapply(df_pred_ref[cols], function(x) {
-  signal::filtfilt(bf, x)
-})
-
-cols <- c("T.mean", "T.lo", "T.hi", "T.lolo", "T.hihi")
-dt <- median(diff(df_ins_ref$year))  # should be 1 for annual data
-cutoff_years <- 100
-order <- 4
-# Normalized cutoff frequency: cutoff / Nyquist
-W <- (1 / cutoff_years) / (1 / (2 * dt))
-bf <- butter(order, W, type = "low")
-df_ins_smooth <- df_ins_ref
-df_ins_smooth[paste0(cols, "_smooth")] <- lapply(df_ins_ref[cols], function(x) {
-  signal::filtfilt(bf, x)
-})
-
-head(df_pred_smooth)
-
-p_bh_ts <- ggplot() +
-  geom_ribbon(
-    data = df_pred_ref,
-    aes(
-      x = year,
-      ymin = lolo,
-      ymax = hihi
-    ),
-    fill = "cyan3",
-    alpha = 0.30
-  ) +
-  geom_ribbon(
-    data = df_ins_ref,
-    aes(
-      x = year,
-      ymin = T.lolo,
-      ymax = T.hihi
-    ),
-    fill = "darkorange2",
-    alpha = 0.30
-  ) +
-  geom_ribbon(
-    data = df_borehole,
-    aes(
-      x = Year,
-      ymin = p2.5,
-      ymax = p97.5
-    ),
-    fill = "red",
-    alpha = 0.30
-  ) +
-  geom_line(
-    data = df_borehole,
-    aes(x = Year, y = p50),
-    color = "red",
-    alpha = 1
-  ) +
-  geom_line(
-    data = df_pred_ref,
-    aes(x = year, y = mean),
-    color = 'darkorchid4',
-    linewidth = 0.55,
-    na.rm = TRUE
-  ) +
-  geom_line(
-    data = df_pred_smooth,
-    aes(x = year, y = mean_smooth),
-    color = 'magenta',
-    linewidth = 0.55,
-    na.rm = TRUE
-  ) +
-  geom_line(
-    data = df_ins_ref,
-    aes(x = year, y = T.mean),
-    color = 'darkgreen',
-    linewidth = 0.55,
-    na.rm = TRUE
-  ) +
-  geom_line(
-    data = df_ins_smooth,
-    aes(x = year, y = T.mean_smooth),
-    color = 'green',
-    linewidth = 0.55,
-    na.rm = TRUE
-  ) +
-  labs(x = "year", y = "GMST Anomaly (°C)") +
-  theme_light(base_size = 10)
-
-p_bh_ts
-
-sub_txt <- sprintf(
-  "Reconstruction window: (%s, %s);  RP computed via %s;  AR(1) structure in T and R equations",
-  t1, t2, rp_method
-)
-p_bh <- p_bh_ts + plot_annotation(
-  title = "GMST: Our Reconstruction vs. Reconstruction via Cuesta-Valero Boreholes",
-  subtitle = sub_txt
-) &
-  theme(
-    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-    plot.subtitle = element_text(hjust = 0.5, size = 11)
-  )
-p_bh
-
-ggsave(paste0(cfg$folder_paths$figures_dir,"/compare_to_bh_ts.png"), plot = p_bh, width = 7, height = 5, units = "in", dpi = 300, bg = "white")
-
-
-
-# ------------------------------------------------------------
 # Plot for GMST projections
 # ------------------------------------------------------------
 x_lim <- range(c(df_pred$year, df_ins$year, df_prj$year), na.rm = TRUE)
@@ -1082,7 +949,7 @@ sub_txt <- sprintf(
   t2, t3, rp_method
 )
 p_prj <- p_ts_rpj + plot_annotation(
-  title = "GMST Projections (2001-2100) for CO2_RCP_8.5",
+  title = "GMST Projections (2001-2100) for CO2_RCP_4.5",
   subtitle = sub_txt
 ) &
   theme(

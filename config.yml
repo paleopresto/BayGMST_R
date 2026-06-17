@@ -9,7 +9,7 @@ stan_params:
   iter_warmup: 500
 
   # Number of post-warmup sampling iterations per chain
-  iter_sampling: 2500 # must be greater than 1000
+  iter_sampling: 1500 # must be greater than 1000
   
 partition_years:
   # The script builds: years <- t1:t3 OR years <- t1:t4
