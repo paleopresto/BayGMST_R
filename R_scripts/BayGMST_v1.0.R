@@ -223,7 +223,7 @@ data_list <- list(
   y_obs = y_obs,
   z = z,
   NT_prj = if (is.null(t4)) 0L else as.integer(t4 - t3),
-  G_prj = as.vector(df_prj$CO2_RCP_8.5),
+  G_prj = as.vector(df_prj$CO2_RCP_4.5),
   S_prj = as.vector(df_prj$solar),
   vol_coef = vol_coef
 )
