@@ -74,9 +74,9 @@ machines) -- but this has not been verified by actually running it.
 
 ## 5. Fill in placeholders that need your judgment, not mine
 
-- **`DESCRIPTION` `Description:` field** -- drafted from the README and the
-  thesis proposal's Project II motivation section. Read it and edit the
-  wording to your satisfaction; it's public CRAN-facing text.
+- **`DESCRIPTION` `Description:` field** -- drafted from the README and this
+  package's own code. Read it and edit the wording to your satisfaction;
+  it's public CRAN-facing text.
 - **`RoxygenNote` in `DESCRIPTION`** -- set to a guessed placeholder
   (`7.3.2`); `devtools::document()` (step 1) will set the real value
   automatically.

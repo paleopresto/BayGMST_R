@@ -89,14 +89,24 @@ than keeping it in the reference manual once the real, \texttt{roxygen2}-generat
 version of this document is built, since \texttt{R CMD Rd2pdf} has no
 mechanism to reproduce a hand-added section like this one.}
 
-The model implemented in \texttt{src/stan/baygmst.stan} (via
-\texttt{fit\_baygmst()}) is the two-equation reduced-proxy Bayesian
-hierarchical model of Barboza et al.\ (2014, 2019) and Wang (2020), as
-described in Bagwell's thesis proposal (Rice University, Dept.\ of
-Statistics, ``Project II: Bayesian State-Space Reconstructions of GMST with
-Physically Motivated Ocean Memory,'' \S 2.1). Using the proposal's own
-notation (year subscript $t$), with $P_t$ the reduced/representative proxy
-series and $T_t$ the (possibly latent) global mean surface temperature:
+The equations below are a direct transcription of
+\texttt{src/stan/baygmst.stan} (verified by reading that file), presented
+using a proxy/temperature notation consistent with Barboza et al.\ (2019).
+\flag{On lineage: I have read Barboza et al.\ (2019) directly (source PDF
+supplied this session) but not Barboza et al.\ (2014) or Wang (2020)
+themselves, so I am careful not to overclaim equation-for-equation
+provenance. Barboza et al.\ (2019)'s own published equations (their \S 3.2,
+models ``NF''/``WF''/``Mixed'') use \emph{i.i.d.} errors, not the
+autoregressive (AR(1)) structure below -- they mention AR(1) only in
+passing, as an alternative error structure they tested without materially
+changing conclusions. Barboza et al.\ (2019)'s introduction attributes the
+joint state-space treatment of proxy and temperature, and the
+short-/long-memory error-structure comparison, to Barboza et al.\ (2014)
+(``B14'' in their text) -- so the AR(1) equations actually implemented here
+most likely trace to B14's specification rather than B19's own published
+one, but I have not read B14 directly to confirm the equations match
+exactly.} With $P_t$ the reduced/representative proxy series and $T_t$ the
+(possibly latent) global mean surface temperature:
 
 \paragraph{Data level (proxy equation).}
 \begin{equation}
@@ -118,7 +128,7 @@ forcings, and $|\phi_P|, |\phi_T| < 1$, $\sigma_P, \sigma_T > 0$.
 \rdsub{Mapping to the code}
 \begin{quote}
 \begin{tabular}{@{}lll@{}}
-\textbf{Proposal notation} & \textbf{Stan parameter} & \textbf{R argument / role} \\
+\textbf{Notation above} & \textbf{Stan parameter} & \textbf{R argument / role} \\
 \hline
 $T_t$ & \texttt{y} (transformed parameter) & \texttt{instrumental\_T} (observed part), \texttt{y\_mis} (reconstructed part) \\
 $P_t$ & \texttt{z} (data) & \texttt{proxy} -- see \texttt{reduce\_proxies()} \\
@@ -133,10 +143,11 @@ $G_t, V_t, S_t$ & \texttt{G}, \texttt{V}, \texttt{S} (data) & \texttt{forcing\_G
 \end{quote}
 \flag{The Stan variable is named \texttt{phi\_R}/\texttt{sigma\_z} (``R'' for
 ``reduced proxy,'' matching this specific implementation's single-series
-design) rather than \texttt{phi\_P}/\texttt{sigma\_P} as in the proposal's
-more general notation -- same quantity, different name. I did not rename
-the Stan code to match the proposal, to avoid touching model code beyond
-what was already agreed; flagging the mismatch here instead.}
+design) rather than \texttt{phi\_P}/\texttt{sigma\_P} as used above for
+readability -- same quantity, different name, my own notational choice for
+this document, not a claim about how any cited paper names it. I did not
+rename the Stan code itself, to avoid touching model code beyond what was
+already agreed.}
 
 \rdsub{Priors}
 As specified in the Stan model's \texttt{model} block:
@@ -151,36 +162,51 @@ $\sigma_P\ (\texttt{sigma\_z}),\ \sigma_T\ (\texttt{sigma\_y})$ & $\sim \text{Ex
 original \texttt{BayGMST\_v1.0.stan}; I have not evaluated their
 sensitivity or appropriateness -- that judgment belongs to Tyler/Julien.}
 
-\rdsub{Simplification relative to the general proposal: no instrumental
-measurement-error layer}
-\gap{The thesis proposal's more general state-space formulation (\S 2.2,
-Eq.~5) adds a separate instrumental measurement equation
-$I_t = T_t + \sigma_I \xi_t$, treating the observed instrumental record
-$I_t$ as a \emph{noisy} realization of the latent true temperature $T_t$.
-\textbf{The model actually implemented here does not include that layer}:
-in \texttt{baygmst.stan}, \texttt{y[idx\_obs] = y\_obs} sets the latent
-state exactly equal to the raw instrumental values for observed years --
-i.e.\ instrumental temperature is treated as error-free. There is no
-$\sigma_I$ parameter in this implementation. This is a real, substantive
-simplification relative to the proposal's stated framework, not just a
-naming difference -- worth flagging explicitly since someone reading the
-proposal and then the code could otherwise assume they match exactly.}
+\rdsub{Forcing data}
+Per Barboza et al.\ (2019, \S 2.3), the three external forcings used in this
+family of models are:
+\begin{itemize}
+\item \textbf{Volcanic forcing} ($V_t$): zonal-mean stratospheric aerosol
+  optical depth at 550\,nm, area-weighted and averaged to a global annual
+  estimate. Barboza et al.\ (2019) attribute this to the eVolv2k dataset,
+  citing Toohey et al.\ (2016); the eVolv2k dataset itself (500 BCE--1900
+  CE) is documented in Toohey and Sigl (2017).
+\item \textbf{Solar forcing} ($S_t$): total solar irradiance from the
+  SATIRE-H reconstruction (Vieira et al., 2011), decadal before 1940 CE and
+  daily thereafter, interpolated to annual resolution.
+\item \textbf{Greenhouse-gas forcing} ($G_t$): hemispheric-mean atmospheric
+  CO$_2$ mole fraction (ppm) at annual resolution (Meinshausen et al.,
+  2017), extended further back using ice-core-based compilations such as
+  the PMIP4-CMIP6 \texttt{past1000} forcing set (Jungclaus et al., 2017).
+\end{itemize}
+Full citations for all of the above are in the References section.
+\flag{This description is Barboza et al.\ (2019)'s own account of \emph{their}
+forcing data, offered here as the best available explanation of where this
+package's \texttt{data/forcing.csv} most likely originates, given the shared
+authorship and methodological lineage. I have not independently traced
+\texttt{data/forcing.csv}'s actual provenance (it carries no metadata/header
+documenting its source), so treat this as a well-informed inference, not a
+confirmed fact -- Tyler/Julien can confirm directly.}
 
-\rdsub{Not yet implemented: the proposal's main innovations}
-\gap{The thesis proposal's actual \emph{proposed innovations} (\S 2.2--2.3)
--- (1) replacing the single reduced proxy $P_t$ with the full multivariate
-proxy network $P_{i,t}$, $i = 1,\dots,m$, estimated via a Kalman
-filter/smoother with hierarchical partial pooling on proxy sensitivities
-$\alpha_{i,1}$, and (2) replacing the AR(1) temperature equation
-(Eq.~\ref{eq:temp}) with a physically motivated multi-layer ocean-memory
-box model, $T_t = T_{t,\det}(G,V,S) + \sigma\,\boldsymbol{c}^\top
-\boldsymbol{x}_t$ with $\boldsymbol{x}_t$ a vector of Ornstein-Uhlenbeck
-processes at timescales $\boldsymbol{\tau}$ -- are \textbf{not implemented
-in this package}. They are the actual subject of Tyler's proposed thesis
-work, still to be written. Nothing in \texttt{BayGMST} 0.1.0 should be read
-as already delivering them; \texttt{reduce\_proxies()} still collapses the
-proxy network to a single series exactly as the \emph{current} (not
-proposed) reduced-proxy approach does.}
+\flag{Barboza et al.\ (2019, \S 3.2) themselves use the transforms
+$\tilde{C}_t = \log(C_t)$ (greenhouse gases) and $\tilde{V}_t =
+\log(-V_t + 1)$ (volcanic), citing Barboza et al.\ (2014) for the choice.
+\texttt{transform\_forcings()} instead implements $G' =
+\texttt{co2\_coef} \times \log(G/\texttt{co2\_c0})$ and $V' =
+-|\texttt{vol\_coef}|(1-e^{-V})$ (see \texttt{?transform\_forcings}) -- the
+same log-CO2 spirit, but not an identical functional form, and a different
+saturating form for volcanic forcing. I have not read Wang (2020) or
+Barboza et al.\ (2014) directly, so I can't say whether this divergence
+originates in one of those or is specific to Tyler's own
+\texttt{BayGMST\_v1.0.R}; worth checking directly.}
+
+\rdsub{Note on the instrumental period}
+\flag{In \texttt{baygmst.stan}, \texttt{y[idx\_obs] = y\_obs} sets the
+latent temperature state exactly equal to the raw instrumental values for
+observed years -- i.e.\ instrumental temperature is treated as error-free,
+with no separate measurement-noise parameter. This is a modeling choice
+worth being aware of when interpreting instrumental-period fit statistics
+from \texttt{summary.baygmst\_fit()}.}
 
 \rdtopic{R topics documented:}
 \begin{quote}
@@ -225,9 +251,9 @@ Restructured from a collection of top-level analysis scripts (see
 \texttt{NEWS.md} for exactly what changed, and
 \texttt{inst/legacy-scripts/} for the untouched originals).
 \gap{The \texttt{Description:} field's exact public-facing wording in
-\texttt{DESCRIPTION} was drafted by me from the README and the thesis
-proposal's Project II motivation section --- it has not been reviewed or
-approved by Tyler or Julien. Please read and edit it before any submission.}
+\texttt{DESCRIPTION} was drafted by me from the README and this package's
+own code -- it has not been reviewed or approved by Tyler or Julien. Please
+read and edit it before any submission.}
 
 \rdsub{Author(s)}
 Tyler Bagwell \texttt{<teb6@rice.edu>} (maintainer), Julien Emile-Geay
@@ -523,11 +549,6 @@ posteriors or to \texttt{y\_mis}. Left unchanged, since even a
 belt-and-suspenders self-documenting rewrite is a code change to model
 machinery that deserves Tyler/Julien's sign-off, not a unilateral one.}
 
-\gap{The thesis proposal's actual proposed innovations for Project II --
-the multivariate multi-proxy Kalman filter/smoother and the physically
-motivated multi-box ocean-memory temperature process -- are not
-implemented in this package version. See \S\ref{sec:model}.}
-
 \flag{Several \texttt{library()} calls in the original scripts
 (\texttt{car}, \texttt{fda}, \texttt{ggmap}, \texttt{maps}) had no evident
 corresponding usage in the code as written and were not carried into
@@ -541,5 +562,60 @@ placeholders (see the header comment in each), not actual
 \texttt{roxygen2} output, because this restructuring was done without an R
 installation available to run it. \texttt{CRAN-READINESS.md} has the exact
 commands to regenerate and verify them for real.}
+
+\clearpage
+\section*{References}
+
+\flag{Entries below were taken directly from
+\texttt{Bagwell\_thesis\_proposal\_for\_Julien/ref.bib} (Barboza 2014,
+Barboza 2019, Wang 2020, Jungclaus 2017) and from
+\texttt{JEG\_biblio.bib} (Toohey et al.\ 2016, Toohey and Sigl 2017,
+Meinshausen et al.\ 2017, Vieira et al.\ 2011) -- not reconstructed from
+memory. The Barboza et al.\ (2019) entry's DOI was additionally
+cross-checked against the actual PDF's title page.}
+
+\begin{quote}
+\noindent Barboza, L., Li, B., Tingley, M. P., and Viens, F. G. (2014).
+Reconstructing past temperatures from natural proxies and estimated climate
+forcings using short- and long-memory models. \emph{The Annals of Applied
+Statistics}, 8(4):1966--2001. doi:10.1214/14-AOAS785
+
+\vspace{0.5em}\noindent Barboza, L. A., Emile-Geay, J., Li, B., and He, W.
+(2019). Efficient Reconstructions of Common Era Climate via Integrated
+Nested Laplace Approximations. \emph{Journal of Agricultural, Biological,
+and Environmental Statistics}, 24(3):535--554.
+doi:10.1007/s13253-019-00372-4
+
+\vspace{0.5em}\noindent Jungclaus, J. H., Bard, E., Baroni, M., et al.
+(2017). The PMIP4 contribution to CMIP6 -- Part 3: The last millennium,
+scientific objective, and experimental design for the PMIP4
+\emph{past1000} simulations. \emph{Geoscientific Model Development},
+10(11):4005--4033.
+
+\vspace{0.5em}\noindent Meinshausen, M., Vogel, E., Nauels, A., et al.
+(2017). Historical greenhouse gas concentrations for climate modelling
+(CMIP6). \emph{Geoscientific Model Development}, 10(5):2057--2116.
+doi:10.5194/gmd-10-2057-2017
+
+\vspace{0.5em}\noindent Toohey, M., Stevens, B., Schmidt, H., and Timmreck,
+C. (2016). Easy Volcanic Aerosol (EVA v1.0): An idealized forcing generator
+for climate simulations. \emph{Geoscientific Model Development},
+9(11):4049--4070.
+
+\vspace{0.5em}\noindent Toohey, M. and Sigl, M. (2017). Volcanic
+stratospheric sulfur injections and aerosol optical depth from 500\,BCE to
+1900\,CE. \emph{Earth System Science Data}, 9(2):809--831.
+doi:10.5194/essd-9-809-2017
+
+\vspace{0.5em}\noindent Vieira, L. E. A., Solanki, S. K., Krivova, N. A.,
+and Usoskin, I. (2011). Evolution of the solar irradiance during the
+Holocene. \emph{Astronomy \& Astrophysics}, 531:A6.
+doi:10.1051/0004-6361/201015843
+
+\vspace{0.5em}\noindent Wang, H. (2020). \emph{Wiener-Chaos Analysis on
+Bayesian Models with Applications in Agriculture and Climatology}. Ph.D.
+dissertation, Michigan State University, East Lansing, MI.
+doi:10.25335/vb7s-rh49
+\end{quote}
 
 \end{document}
