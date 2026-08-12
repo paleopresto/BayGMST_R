@@ -199,28 +199,27 @@ units (aerosol optical depth for $V_t$; mole fraction for $G_t$)
 where \texttt{co2\_coef} $= 5.35$ is the simplified CO$_2$ radiative
 forcing coefficient of \citet{myhre1998}, adopted throughout the IPCC
 assessment reports; \texttt{co2\_c0} $= 280$ ppm is the standard
-pre-industrial atmospheric CO$_2$ reference concentration used as the
-baseline $C_0$ in that same formula, consistent with the ice-core-based
-reconstructions (e.g.\ Law Dome, Antarctica) underlying compilations such
-as \citet{Jungclaus2017}; and \texttt{vol\_coef} $= 25$ is the
+pre-industrial atmospheric CO$_2$ reference concentration; and \texttt{vol\_coef} $= 25$ is the
 stratospheric aerosol optical depth-to-forcing scaling factor (in
-$\mathrm{W\,m^{-2}}$ per unit optical depth) used in IPCC AR5, traced to
+$\mathrm{W.m^{-2}}$ per unit optical depth) used in IPCC AR5, traced to
 the GISS ModelE lineage of \citet{Hansen_et_al2005}. These
 physically-motivated formulations are a slight departure from the
 transformations used by \citet{Barboza2014,Barboza2019}.
-\flag{\citet{myhre1998} is not one of the two designated source bib files
-(\texttt{ref.bib}/\texttt{JEG\_biblio.bib}) -- added from independently
-verified domain knowledge (confirmed via live literature search against
-its DOI), not retyped from unverified memory. The \texttt{vol\_coef} $=
-25$ attribution to \citet{Hansen_et_al2005} is well corroborated via
-secondary citations (e.g.\ IPCC AR5 Ch.\ 8) but was not independently
-verified against Hansen et al.'s primary text itself. \texttt{co2\_c0} $=
-280$ is the standard, widely-used pre-industrial CO$_2$ value (confirmed
-via live search: 280.3\,ppm at Law Dome, 281.5\,ppm averaged across three
-major ice cores) -- I have not pinned it to one specific primary ice-core
-publication, and the \citet{Jungclaus2017} citation above is offered as a
-relevant, already-verified compilation reference rather than the original
-source of the 280\,ppm convention itself.}
+
+
+%\flag{\citet{myhre1998} is not one of the two designated source bib files
+%(\texttt{ref.bib}/\texttt{JEG\_biblio.bib}) -- added from independently
+%verified domain knowledge (confirmed via live literature search against
+%its DOI), not retyped from unverified memory. The \texttt{vol\_coef} $=
+%25$ attribution to \citet{Hansen_et_al2005} is well corroborated via
+%secondary citations (e.g.\ IPCC AR5 Ch.\ 8) but was not independently
+%verified against Hansen et al.'s primary text itself. \texttt{co2\_c0} $=
+%280$ is the standard, widely-used pre-industrial CO$_2$ value (confirmed
+%via live search: 280.3\,ppm at Law Dome, 281.5\,ppm averaged across three
+%major ice cores) -- I have not pinned it to one specific primary ice-core
+%publication, and the \citet{Jungclaus2017} citation above is offered as a
+%relevant, already-verified compilation reference rather than the original
+%source of the 280\,ppm convention itself.}
 
 \rdsub{Note on the instrumental period}
 \flag{In \texttt{baygmst.stan}, \texttt{y[idx\_obs] = y\_obs} sets the
