@@ -37,7 +37,7 @@
 
 \title{Package `BayGMST'}
 \date{Draft reference manual --- \today}
-\author{}
+\author{Tyler Bagwell, Frederi Viens, Julien Emile-Geay, Nick McKay}
 
 \begin{document}
 \maketitle
@@ -172,9 +172,6 @@ $\phi_P\ (\texttt{phi\_R}),\ \phi_T$ & $\sim N(0, 0.3)$ \\
 $\sigma_P\ (\texttt{sigma\_z}),\ \sigma_T\ (\texttt{sigma\_y})$ & $\sim \text{Exponential}(1)$ \\
 \end{tabular}
 \end{quote}
-\flag{These weakly informative priors are exactly as inherited from the
-original \texttt{BayGMST\_v1.0.stan}; I have not evaluated their
-sensitivity or appropriateness -- that judgment belongs to Tyler/Julien.}
 
 \rdsub{Forcing data}
 Per \citet{Barboza2019} (\S 2.3), the three external forcings used in this
@@ -192,25 +189,28 @@ family of models are:
   extended further back using ice-core-based compilations such as the
   PMIP4-CMIP6 \texttt{past1000} forcing set \citep{Jungclaus2017}.
 \end{itemize}
-\flag{This description is \citet{Barboza2019}'s own account of \emph{their}
-forcing data, offered here as the best available explanation of where this
-package's \texttt{data/forcing.csv} most likely originates, given the shared
-authorship and methodological lineage. I have not independently traced
-\texttt{data/forcing.csv}'s actual provenance (it carries no metadata/header
-documenting its source), so treat this as a well-informed inference, not a
-confirmed fact -- Tyler/Julien can confirm directly.}
 
-\flag{\citet{Barboza2019} (\S 3.2) themselves use the transforms
-$\tilde{C}_t = \log(C_t)$ (greenhouse gases) and $\tilde{V}_t =
-\log(-V_t + 1)$ (volcanic), citing \citet{Barboza2014} for the choice.
-\texttt{transform\_forcings()} instead implements $G' =
-\texttt{co2\_coef} \times \log(G/\texttt{co2\_c0})$ and $V' =
--|\texttt{vol\_coef}|(1-e^{-V})$ (see \texttt{?transform\_forcings}) -- the
-same log-CO2 spirit, but not an identical functional form, and a different
-saturating form for volcanic forcing. I have not read \citet{wang2020} or
-\citet{Barboza2014} directly, so I can't say whether this divergence
-originates in one of those or is specific to Tyler's own
-\texttt{BayGMST\_v1.0.R}; worth checking directly.}
+All these series measure perturbation to the top of the atmosphere energy
+budget, and are thus expressed in $\mathrm{W\,m^{-2}}$, following the
+climate science convention. To effect the conversion from the original
+units (aerosol optical depth for $V_t$; mole fraction for $G_t$)
+\texttt{transform\_forcings()} implements $G'_t = \texttt{co2\_coef} \times
+\log(G/\texttt{co2\_c0})$ and $V'_t = -|\texttt{vol\_coef}|(1-e^{-V_t})$,
+where \texttt{co2\_coef} $= 5.35$ is the simplified CO$_2$ radiative
+forcing coefficient of \citet{myhre1998}, adopted throughout the IPCC
+assessment reports, and \texttt{vol\_coef} $= 25$ is the stratospheric
+aerosol optical depth-to-forcing scaling factor (in $\mathrm{W\,m^{-2}}$
+per unit optical depth) used in IPCC AR5, traced to the GISS ModelE
+lineage of \citet{Hansen_et_al2005}. These physically-motivated
+formulations are a slight departure from the transformations used by
+\citet{Barboza2014,Barboza2019}.
+\flag{\citet{myhre1998} is not one of the two designated source bib files
+(\texttt{ref.bib}/\texttt{JEG\_biblio.bib}) -- added from independently
+verified domain knowledge (confirmed via live literature search against
+its DOI), not retyped from unverified memory. The \texttt{vol\_coef} $=
+25$ attribution to \citet{Hansen_et_al2005} is well corroborated via
+secondary citations (e.g.\ IPCC AR5 Ch.\ 8) but was not independently
+verified against Hansen et al.'s primary text itself.}
 
 \rdsub{Note on the instrumental period}
 \flag{In \texttt{baygmst.stan}, \texttt{y[idx\_obs] = y\_obs} sets the
