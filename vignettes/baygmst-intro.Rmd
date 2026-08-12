@@ -1,0 +1,155 @@
+---
+title: "Introduction to BayGMST"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to BayGMST}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5
+)
+has_cmdstan <- requireNamespace("instantiate", quietly = TRUE) &&
+  instantiate::stan_cmdstan_exists()
+```
+
+This vignette walks through the full BayGMST workflow end to end, using small
+example datasets bundled with the package (trimmed subsets of the data used
+in Bagwell et al., in prep.; see `system.file("extdata", package =
+"BayGMST")`). It replaces the `config.yml`-driven scripts the package was
+originally built from -- see `NEWS.md` and
+`system.file("legacy-scripts", package = "BayGMST")`.
+
+```{r setup}
+library(BayGMST)
+```
+
+## 1. Load example data
+
+```{r load-data}
+proxy_matrix <- read.csv(
+  system.file("extdata", "example_proxy_matrix.csv", package = "BayGMST")
+)
+forcing_raw <- read.csv(
+  system.file("extdata", "example_forcing.csv", package = "BayGMST")
+)
+instrumental_raw <- read.csv(
+  system.file("extdata", "example_instrumental_temperature.csv", package = "BayGMST")
+)
+# read.csv() mangles "Time"/"Anomaly (deg C)" headers via make.names(); give
+# them stable names instead of relying on the mangled spelling.
+colnames(instrumental_raw)[1:2] <- c("Time", "Anomaly")
+
+years <- forcing_raw$year
+head(proxy_matrix)
+```
+
+## 2. Reduce the proxy network to a single representative series
+
+```{r reduce-proxies}
+calib_years <- instrumental_raw$Time
+
+rp <- reduce_proxies(
+  proxy_matrix = proxy_matrix[, -1],
+  years        = proxy_matrix$year,
+  temp_calib   = instrumental_raw$Anomaly,
+  calib_years  = calib_years,
+  method       = "PCR",
+  # `chunk` must be large enough that every segment (including the last,
+  # shortest one) still fully contains the calibration window (1850-2000,
+  # 151 years). This toy example only has 301 years total, so we use a
+  # single segment (chunk >= length(years)) rather than the package
+  # default of 250, which would create a too-short trailing segment here.
+  chunk        = nrow(proxy_matrix)
+)
+head(rp$composite)
+```
+
+`rp$composite$RP1` is the representative proxy series to pass to
+`fit_baygmst()`.
+
+## 3. Transform the radiative forcings
+
+```{r transform-forcings}
+forcing <- transform_forcings(
+  G = forcing_raw$CO2,
+  V = forcing_raw$volcanic,
+  S = forcing_raw$solar
+)
+```
+
+## 4. Align everything onto the common year grid and fit the model
+
+```{r align}
+instrumental_T <- instrumental_raw$Anomaly[match(years, instrumental_raw$Time)]
+proxy <- rp$composite$RP1[match(years, rp$composite$year)]
+```
+
+Fitting requires a working CmdStan installation (via \pkg{cmdstanr} /
+\pkg{instantiate}); see `vignette("cmdstanr", package = "cmdstanr")` if you
+don't have one yet. The chunk below is skipped if none is found.
+
+```{r fit, eval = has_cmdstan}
+fit <- fit_baygmst(
+  proxy          = proxy,
+  instrumental_T = instrumental_T,
+  forcing_G      = forcing$G,
+  forcing_V      = forcing$V,
+  forcing_S      = forcing$S,
+  years          = years,
+  chains         = 2,
+  parallel_chains = 2,
+  iter_warmup    = 300,
+  iter_sampling  = 1000,
+  seed           = 1
+)
+summary(fit)
+```
+
+## 5. Visualize the reconstruction
+
+```{r plot-reconstruction, eval = has_cmdstan}
+plot_reconstruction(fit)
+```
+
+```{r plot-trace, eval = has_cmdstan}
+plot_trace(fit)
+```
+
+```{r plot-posteriors, eval = has_cmdstan}
+plot_posterior_densities(fit)
+```
+
+## 6. Cross-validate
+
+```{r cv, eval = has_cmdstan}
+cv <- cv_baygmst(
+  proxy          = proxy,
+  instrumental_T = instrumental_T,
+  forcing_G      = forcing$G,
+  forcing_V      = forcing$V,
+  forcing_S      = forcing$S,
+  years          = years,
+  nfold          = 3,
+  chains         = 2,
+  parallel_chains = 2,
+  iter_warmup    = 300,
+  iter_sampling  = 1000,
+  seed           = 1
+)
+cv
+plot_cv(cv)
+```
+
+## Known limitations
+
+See `NEWS.md` for the full list. Most notably: `src/stan/baygmst.stan`
+contains one unresolved indexing question the original author flagged and
+never fully validated (`// CHECK THIS LINE`), carried forward unchanged
+pending statistical review -- reconstructions from this vignette's toy data
+should not be over-interpreted.

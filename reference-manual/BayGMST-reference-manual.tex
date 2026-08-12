@@ -1,0 +1,427 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{longtable}
+\usepackage{parskip}
+
+\definecolor{gapred}{RGB}{178,24,43}
+\definecolor{gaporange}{RGB}{217,95,2}
+\definecolor{codebg}{RGB}{245,245,245}
+
+\newtcolorbox{gapbanner}{
+  colback=gapred!6, colframe=gapred, boxrule=1pt, arc=2pt,
+  fonttitle=\bfseries, title=READ THIS FIRST}
+\newcommand{\gap}[1]{\textcolor{gapred}{\textbf{[GAP]} #1}}
+\newcommand{\flag}[1]{\textcolor{gaporange}{\textbf{[FLAG]} #1}}
+
+\newcommand{\rdtopic}[1]{\clearpage\section{#1}}
+\newcommand{\rdsub}[1]{\subsection*{#1}}
+\newenvironment{rdusage}{\begin{quote}\ttfamily\small}{\end{quote}}
+\newenvironment{rdcode}{\begin{quote}\ttfamily\small}{\end{quote}}
+
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{BayGMST}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\title{Package `BayGMST'}
+\date{Draft reference manual --- \today}
+\author{}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Type:} & Package \\
+\textbf{Title:} & Bayesian Reconstruction of Global Mean Surface Temperature \\
+\textbf{Version:} & 0.1.0 \\
+\textbf{Maintainer:} & Tyler Bagwell \texttt{<teb6@rice.edu>} \\
+\textbf{License:} & GPL ($\geq$ 3) \\
+\end{tabular}
+\end{center}
+
+\vspace{1em}
+\begin{gapbanner}
+This is a \textbf{hand-typeset preview}, not the real, authoritative CRAN
+reference manual. It was produced in a sandbox with \textbf{no R
+installation available}, so it could not be generated the normal way
+(\texttt{devtools::document()} to build \texttt{man/*.Rd}, then
+\texttt{devtools::build\_manual()} / \texttt{R CMD Rd2pdf} to render this
+PDF from those \texttt{.Rd} files). Content below was written by hand to
+mirror that output as closely as possible, from the same source
+descriptions as the \texttt{roxygen2} comments in \texttt{R/}.
+
+\textbf{Before treating this as final:} run the two commands above (see
+\texttt{CRAN-READINESS.md} at the package root for the full checklist) and
+let the real output supersede this file.
+
+Text marked \gap{like this} is a genuine information gap I could not
+resolve myself. Text marked \flag{like this} is a decision, judgment call,
+or unresolved issue from the original code that needs Tyler's or Julien's
+sign-off, not something I decided unilaterally.
+\end{gapbanner}
+
+\clearpage
+\tableofcontents
+
+\rdtopic{R topics documented:}
+\begin{quote}
+\begin{tabular}{ll}
+BayGMST-package & BayGMST: Bayesian Reconstruction of Global Mean Surface Temperature \\
+cv\_baygmst & K-fold cross-validate the BayGMST model over the instrumental period \\
+fit\_baygmst & Fit the BayGMST Bayesian hierarchical AR(1) reconstruction model \\
+plot\_cv & Plot k-fold cross-validation reconstructions \\
+plot\_posterior\_densities & Posterior density plots for a fitted BayGMST model \\
+plot\_reconstruction & Plot a BayGMST reconstruction \\
+plot\_trace & Trace plots for a fitted BayGMST model \\
+print.baygmst\_cv & Print method for \texttt{"baygmst\_cv"} objects \\
+print.baygmst\_fit & Print a fitted BayGMST model \\
+print.summary.baygmst\_fit & Print method for \texttt{"summary.baygmst\_fit"} objects \\
+reconstruct & Extract a tidy reconstruction from a fitted BayGMST model \\
+reduce\_proxies & Reduce a multi-proxy network to a single representative proxy series \\
+summary.baygmst\_fit & Summarize a fitted BayGMST model \\
+transform\_forcings & Transform raw radiative forcings for use with \texttt{fit\_baygmst()} \\
+\end{tabular}
+\end{quote}
+
+% ============================================================
+\rdtopic{BayGMST-package}
+\textbf{BayGMST: Bayesian Reconstruction of Global Mean Surface Temperature}
+
+\rdsub{Description}
+Fits a Bayesian hierarchical AR(1) state-space model relating global mean
+surface temperature (GMST) to a reduced paleoclimate proxy network,
+instrumental temperature observations, and radiative forcings (greenhouse
+gases, volcanic aerosols, and solar irradiance). Missing pre-instrumental
+temperatures are estimated jointly with the model parameters using Stan via
+the \texttt{instantiate} and \texttt{cmdstanr} packages.
+
+\rdsub{Model fitting requires CmdStan}
+\texttt{fit\_baygmst()} and \texttt{cv\_baygmst()} compile and sample a Stan
+model, which requires a working CmdStan installation. Check with
+\texttt{instantiate::stan\_cmdstan\_exists()} first. \texttt{reduce\_proxies()}
+and \texttt{transform\_forcings()} do not require CmdStan.
+
+\rdsub{Provenance}
+Restructured from a collection of top-level analysis scripts (see
+\texttt{NEWS.md} for exactly what changed, and
+\texttt{inst/legacy-scripts/} for the untouched originals).
+\gap{The \texttt{Description:} field's exact public-facing wording in
+\texttt{DESCRIPTION} was drafted by me from the README and the thesis
+proposal's Project II motivation section --- it has not been reviewed or
+approved by Tyler or Julien. Please read and edit it before any submission.}
+
+\rdsub{Author(s)}
+Tyler Bagwell \texttt{<teb6@rice.edu>} (maintainer), Julien Emile-Geay
+\texttt{<julieneg@usc.edu>}.
+\flag{These are the only two contributors visible in \texttt{git log}; add
+others if appropriate.}
+
+% ============================================================
+\rdtopic{transform\_forcings}
+\textbf{Transform raw radiative forcings for use with \texttt{fit\_baygmst()}}
+
+\rdsub{Description}
+Applies the forcing transformations used throughout the BayGMST pipeline:
+volcanic forcing is mapped to a negative saturating form, greenhouse-gas
+(CO2) forcing is log-transformed relative to a reference concentration, and
+solar forcing is centered on its own mean. Ported from the normalization
+block near the top of the original \texttt{BayGMST\_v1.0.R} script.
+
+\rdsub{Usage}
+\begin{rdusage}
+transform\_forcings(G, V, S, co2\_c0 = 280, co2\_coef = 5.35, vol\_coef = 25)
+\end{rdusage}
+
+\rdsub{Arguments}
+\begin{quote}
+\begin{tabular}{@{}p{3cm}p{11cm}@{}}
+\texttt{G} & Numeric vector of raw greenhouse-gas forcing (e.g.\ atmospheric CO2 concentration in ppm). \\[0.3em]
+\texttt{V} & Numeric vector of raw volcanic forcing (e.g.\ aerosol optical depth). Same length as \texttt{G}. \\[0.3em]
+\texttt{S} & Numeric vector of raw solar forcing (e.g.\ total solar irradiance). Same length as \texttt{G}. \\[0.3em]
+\texttt{co2\_c0} & Reference/baseline CO2 concentration used in the log transform. Default 280 (ppm). \\[0.3em]
+\texttt{co2\_coef} & Multiplier applied to the log CO2 ratio. Default 5.35. \\[0.3em]
+\texttt{vol\_coef} & Multiplier applied to the volcanic saturating transform. Default 25. \\
+\end{tabular}
+\end{quote}
+
+\rdsub{Details}
+\[ V' = -|\texttt{vol\_coef}| \times (1 - e^{-V}), \qquad
+   G' = \texttt{co2\_coef} \times \log(G / \texttt{co2\_c0}), \qquad
+   S' = S - \bar{S} \]
+
+\rdsub{Value}
+A list with three numeric vectors, \texttt{G}, \texttt{V}, and \texttt{S} --
+the transformed forcings.
+
+\rdsub{Examples}
+\begin{rdcode}
+fc <- transform\_forcings(\\
+\ \ G = c(280, 300, 340, 400),\\
+\ \ V = c(0, 0.05, 0.02, 0.10),\\
+\ \ S = c(1360, 1361, 1360.5, 1361.2)\\
+)\\
+fc\$G
+\end{rdcode}
+
+% ============================================================
+\rdtopic{reduce\_proxies}
+\textbf{Reduce a multi-proxy network to a single representative proxy series}
+
+\rdsub{Description}
+Collapses a matrix of paleoclimate proxy records into a "representative
+proxy" series suitable for \texttt{fit\_baygmst()}, following the
+segmented-composite approach of Barboza et al.\ (2019), ported from
+\texttt{utils/PAGES2k\_reducedProxy\_UNSC.R}. The proxy network is broken
+into overlapping time segments of \texttt{chunk} years; within each
+segment, available proxies are regressed against instrumental temperature
+during \texttt{calib\_years} using the chosen \texttt{method}. The final
+composite series averages across all segments covering a given year.
+
+\rdsub{Usage}
+\begin{rdusage}
+reduce\_proxies(proxy\_matrix, years, temp\_calib, calib\_years,\\
+\ \ method = c("PCR", "LASSO", "sPCR", "SPLS", "SIR"),\\
+\ \ chunk = 250, target\_adj\_r2 = 0.7, max\_na\_frac = 0.05,\\
+\ \ n\_components = 3, spls\_eta = seq(0.1, 0.9, 0.1))
+\end{rdusage}
+
+\rdsub{Arguments}
+\begin{quote}
+\begin{tabular}{@{}p{3.2cm}p{10.8cm}@{}}
+\texttt{proxy\_matrix} & Numeric matrix/data.frame, one row per year (matching \texttt{years}), one column per proxy. No year column. \\[0.3em]
+\texttt{years} & Integer vector of calendar years, one per row of \texttt{proxy\_matrix}. \\[0.3em]
+\texttt{temp\_calib} & Numeric vector, instrumental temperature during \texttt{calib\_years}. \\[0.3em]
+\texttt{calib\_years} & Integer vector, calibration years (subset of \texttt{years}; \texttt{length(calib\_years) == length(temp\_calib)}). \\[0.3em]
+\texttt{method} & One of \texttt{"PCR"} (default), \texttt{"LASSO"}, \texttt{"sPCR"}, \texttt{"SPLS"}, or \texttt{"SIR"}. \textbf{\texttt{"SIR"} is experimental} --- see Details. \\[0.3em]
+\texttt{chunk} & Segment length in years. Default 250. Every segment must fully contain \texttt{calib\_years}, or \texttt{reduce\_proxies()} errors (see Details). \\[0.3em]
+\texttt{target\_adj\_r2} & For \texttt{"PCR"}: adjusted-$R^2$ stopping threshold for adding principal components. Default 0.70. \\[0.3em]
+\texttt{max\_na\_frac} & Proxies missing more than this fraction of a segment are dropped from it. Default 0.05. \\[0.3em]
+\texttt{n\_components} & For \texttt{"sPCR"} only: number of supervised components (scalar or per-segment vector). Default 3. \\[0.3em]
+\texttt{spls\_eta} & For \texttt{"SPLS"} only: sparsity grid passed to \texttt{spls::cv.spls()}. \\
+\end{tabular}
+\end{quote}
+
+\rdsub{Details}
+\textbf{Method support.} \texttt{"PCR"}, \texttt{"LASSO"}, and \texttt{"SPLS"}
+are fully adaptive and supported. \texttt{"sPCR"} is supported but requires
+\texttt{n\_components} to be chosen by the caller (not cross-validated,
+matching the original script).
+
+\flag{\texttt{"SIR"} is a simplified, \emph{unvalidated} reimplementation
+using a single sliced-inverse-regression direction from \texttt{dr}, with
+no per-segment variable pre-selection. It intentionally does \emph{not}
+reproduce the original script's SIR branch, which called an undocumented
+\texttt{edrSelec()} step from the non-CRAN package `edrGraphicalTools' that
+the original author flagged as never fully working ("NEED TO FIGURE OUT HOW
+TO INSTALL edrGraphicalTools!!"). \texttt{config.yml} in the original
+repository likewise documented SIR as "still under construction." Treat
+\texttt{method = "SIR"} output with corresponding caution.}
+
+\flag{The segmentation/calibration-window constraint (\texttt{chunk} must
+be small enough that even the shortest segment still spans all of
+\texttt{calib\_years}) mirrors an explicit \texttt{stop()} check in the
+original script. I ported that check explicitly rather than letting a
+mismatched-length input fail with a cryptic error deep inside \texttt{lm()}
+--- but the underlying design constraint itself is inherited from the
+original code, not something I introduced.}
+
+Required packages: \texttt{"LASSO"} needs \texttt{glmnet}; \texttt{"sPCR"}
+needs \texttt{superpc}; \texttt{"SPLS"} needs \texttt{spls}; \texttt{"SIR"}
+needs \texttt{dr}. All are \texttt{Suggests}, only required for the method
+actually called.
+
+\rdsub{Value}
+A list with \texttt{segments} (data.frame, one column per segment),
+\texttt{composite} (data.frame with columns \texttt{year} and \texttt{RP1},
+the series to pass to \texttt{fit\_baygmst()}), and \texttt{method}.
+
+% ============================================================
+\rdtopic{fit\_baygmst}
+\textbf{Fit the BayGMST Bayesian hierarchical AR(1) reconstruction model}
+
+\rdsub{Description}
+Prepares the data list expected by the \texttt{baygmst} Stan model and
+samples from it with \texttt{cmdstanr}, via \texttt{instantiate}. Ported
+from the data-preparation and \texttt{mod\$sample()} block of the original
+\texttt{BayGMST\_v1.0.R} script, restructured to take explicit arguments
+instead of reading \texttt{config.yml} and hardcoded relative paths, and to
+return an object rather than leaving variables in the global environment.
+
+\rdsub{Usage}
+\begin{rdusage}
+fit\_baygmst(proxy, instrumental\_T, forcing\_G, forcing\_V, forcing\_S, years,\\
+\ \ chains = 4, parallel\_chains = 2, iter\_warmup = 500,\\
+\ \ iter\_sampling = 1500, seed = NULL, ...)
+\end{rdusage}
+
+\rdsub{Arguments}
+\begin{quote}
+\begin{tabular}{@{}p{3.4cm}p{10.6cm}@{}}
+\texttt{proxy} & Representative proxy series -- see \texttt{reduce\_proxies()}. No missing values. \\[0.3em]
+\texttt{instrumental\_T} & Instrumental temperature, \texttt{NA} for pre-instrumental years to reconstruct. \\[0.3em]
+\texttt{forcing\_G, forcing\_V, forcing\_S} & Already-transformed forcings -- see \texttt{transform\_forcings()}. No missing values. \\[0.3em]
+\texttt{years} & Calendar years, defining row order for all arguments above. \\[0.3em]
+\texttt{chains, parallel\_chains, iter\_warmup, iter\_sampling, seed} & Passed to \texttt{cmdstanr}'s \texttt{\$sample()}. \texttt{iter\_sampling} $\geq$ 1000 required. \\[0.3em]
+\texttt{...} & Additional arguments passed to \texttt{\$sample()}. \\
+\end{tabular}
+\end{quote}
+
+\rdsub{Value}
+An object of class \texttt{"baygmst\_fit"}: a list with \texttt{fit} (the
+\texttt{CmdStanMCMC} object), \texttt{years}, \texttt{idx\_obs},
+\texttt{idx\_mis}, \texttt{data}, and \texttt{call}.
+
+\rdsub{Note}
+\gap{This function does not write any files by default (no auto-\texttt{ggsave()},
+no auto-CSV export) -- a deliberate deviation from the original script,
+which wrote directly to \texttt{cfg\$folder\_paths\$...}. This matches CRAN
+policy on functions not writing to the filesystem by default, but it does
+mean any code that relied on those side-effect files (e.g.\
+\texttt{outputs/reconstructions/fit\_post\_summaries.csv}) needs to be
+updated to call \texttt{write.csv()} itself on the returned object.}
+
+% ============================================================
+\rdtopic{cv\_baygmst}
+\textbf{K-fold cross-validate the BayGMST model over the instrumental period}
+
+\rdsub{Description}
+Partitions the instrumental years of \texttt{instrumental\_T} into
+\texttt{nfold} contiguous blocks; for each, refits the model with that
+block hidden, and reports recovery accuracy. Ported from the fold loop in
+\texttt{cv\_v0.1.R}.
+
+\rdsub{Usage}
+\begin{rdusage}
+cv\_baygmst(proxy, instrumental\_T, forcing\_G, forcing\_V, forcing\_S, years,\\
+\ \ nfold = 3, chains = 4, parallel\_chains = 2, iter\_warmup = 500,\\
+\ \ iter\_sampling = 1500, seed = NULL, ...)
+\end{rdusage}
+
+\rdsub{Arguments}
+Same as \texttt{fit\_baygmst()}, plus \texttt{nfold} (number of folds,
+default 3).
+
+\rdsub{Value}
+An object of class \texttt{"baygmst\_cv"}: \texttt{folds} (combined
+data.frame of held-out predictions), \texttt{r2} and \texttt{mse}
+(per-fold, posterior mean of the Stan-computed \texttt{r2\_cv}/\texttt{mse\_cv}
+generated quantities), \texttt{years}, \texttt{call}.
+
+\rdsub{Note}
+\flag{Two blocks in the original \texttt{cv\_v0.1.R} were dropped, not
+ported: (1) a \texttt{Forcings.projections}/RCP-scenario block that was
+built but never referenced again (dead code), and which additionally
+hardcoded a path to a specific contributor's machine
+(\texttt{/Users/tylerbagwell/...}); and (2) a large commented "OLD"
+duplicate of the fold loop at the end of the file. Confirm nothing
+downstream still depended on either.}
+
+\flag{This implementation reports the fully Bayesian posterior mean of the
+Stan model's own \texttt{r2\_cv}/\texttt{mse\_cv} generated quantities. The
+original (non-dead) R loop instead computed a plug-in point-estimate
+$R^2$ in R from the posterior mean reconstruction. The two will be close
+but not identical -- flagging the substitution explicitly rather than
+silently changing what "R2" means.}
+
+% ============================================================
+\rdtopic{reconstruct}
+\textbf{Extract a tidy reconstruction from a fitted BayGMST model}
+
+\rdsub{Description}
+Builds a tidy data.frame combining observed instrumental temperatures with
+the posterior reconstruction of pre-instrumental years -- equivalent to the
+\texttt{gmst\_reconstruction\_data.csv} the original script wrote to disk as
+a side effect, but returned as an object instead.
+
+\rdsub{Usage}
+\begin{rdusage}
+reconstruct(fit, probs\_inner = c(0.16, 0.84), probs\_outer = c(0.025, 0.975))
+\end{rdusage}
+
+\rdsub{Value}
+A data.frame with columns \texttt{year}, \texttt{type}
+(\texttt{"instrumental"}/\texttt{"reconstruction"}), \texttt{T\_obs},
+\texttt{T\_mean}, \texttt{T\_lo\_inner}, \texttt{T\_hi\_inner},
+\texttt{T\_lo\_outer}, \texttt{T\_hi\_outer}.
+
+% ============================================================
+\rdtopic{plot\_reconstruction, plot\_trace, plot\_posterior\_densities, plot\_cv}
+\textbf{Plotting functions}
+
+\rdsub{Description}
+\begin{itemize}
+\item \texttt{plot\_reconstruction(fit, title = "GMST Reconstruction")} --
+  ported from the \texttt{p\_ts} block of \texttt{BayGMST\_v1.0.R}.
+\item \texttt{plot\_trace(fit, parameters = ...)} -- ported from the
+  trace-plot block.
+\item \texttt{plot\_posterior\_densities(fit, parameters = ...)} -- ported
+  from the posterior-histogram block.
+\item \texttt{plot\_cv(cv)} -- ported from the \texttt{p\_ts\_cv} block of
+  \texttt{cv\_v0.1.R}.
+\end{itemize}
+All four return a \texttt{ggplot} object instead of calling
+\texttt{ggsave()}/auto-printing as a side effect; save with
+\texttt{ggplot2::ggsave()} if a file is wanted.
+\flag{The original script combined the reconstruction and posterior-density
+panels into one figure via \texttt{patchwork} (\texttt{p\_ts + p\_hist}).
+Splitting these into separate functions means that combination is no
+longer automatic -- users who want the original combined layout can do
+\texttt{plot\_reconstruction(fit) | plot\_posterior\_densities(fit)}
+themselves via \texttt{patchwork} (moved to \texttt{Suggests}, since the
+package itself no longer calls it directly).}
+
+% ============================================================
+\rdtopic{print/summary methods}
+\textbf{S3 methods}
+
+\rdsub{Description}
+\begin{itemize}
+\item \texttt{print.baygmst\_fit(x, ...)} -- one-line-per-field overview
+  (year range, chains/draws, call).
+\item \texttt{summary.baygmst\_fit(object, ...)} -- posterior parameter
+  summary (\texttt{alpha0, alpha1, phi\_R, phi\_T, beta0, betaG, betaS,
+  betaV, sigma\_y, sigma\_z}) plus instrumental-period fit performance
+  (RMSE, MAE, Bias, Correlation, $R^2$, detrended $R^2$), replacing the
+  \texttt{perf\_stats}/\texttt{R2\_dt} block of \texttt{BayGMST\_v1.0.R}.
+\item \texttt{print.summary.baygmst\_fit(x, ...)} -- pretty-prints the
+  above.
+\item \texttt{print.baygmst\_cv(x, ...)} -- per-fold and median $R^2$.
+\end{itemize}
+
+\clearpage
+\section*{Known limitations index}
+\gap{The unresolved possible bug in \texttt{src/stan/baygmst.stan}
+(\texttt{y\_ins\_fitted} block, \texttt{t == 1} branch: \texttt{z[NT\_mis]}
+used as an index where \texttt{z[idx\_mis[NT\_mis]]} looks more likely
+correct) is carried forward \emph{unchanged} from the original code. This
+restructuring does not alter model math without Tyler/Julien's statistical
+sign-off. See \texttt{NEWS.md} for the exact location and reasoning.}
+
+\flag{Several \texttt{library()} calls in the original scripts
+(\texttt{car}, \texttt{fda}, \texttt{ggmap}, \texttt{maps}) had no evident
+corresponding usage in the code as written and were not carried into
+\texttt{DESCRIPTION}. If a hidden use is found, re-add them.}
+
+\gap{\texttt{DESCRIPTION}'s \texttt{RoxygenNote} field is a placeholder
+(\texttt{7.3.2}) -- \texttt{devtools::document()} will set the real value.}
+
+\gap{\texttt{NAMESPACE} and every file in \texttt{man/} are hand-authored
+placeholders (see the header comment in each), not actual
+\texttt{roxygen2} output, because this restructuring was done without an R
+installation available to run it. \texttt{CRAN-READINESS.md} has the exact
+commands to regenerate and verify them for real.}
+
+\end{document}

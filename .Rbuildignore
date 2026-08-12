@@ -1,0 +1,20 @@
+^data$
+^config\.yml$
+^outputs$
+^baygmst\.Rproj$
+^\.vscode$
+^\.DS_Store$
+^reference-manual$
+^CRAN-READINESS\.md$
+^\.github$
+^README\.Rmd$
+^doc$
+^Meta$
+^\.Rproj\.user$
+# Compiled CmdStan binaries accidentally left in inst/legacy-scripts/ by a
+# prior workflow (see inst/legacy-scripts/README.md) -- exclude the binaries
+# specifically so they don't bloat the built package, while keeping the
+# rest of inst/legacy-scripts/ (including the original .stan source) so
+# system.file("legacy-scripts", package = "BayGMST") still resolves.
+^inst/legacy-scripts/BayGMST_v1\.0$
+^inst/legacy-scripts/BayGMST_v1\.0_5fcv$

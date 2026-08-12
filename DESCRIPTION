@@ -1,0 +1,52 @@
+Package: BayGMST
+Type: Package
+Title: Bayesian Reconstruction of Global Mean Surface Temperature
+Version: 0.1.0
+Authors@R: c(
+    person("Tyler", "Bagwell", email = "teb6@rice.edu",
+           role = c("aut", "cre")),
+    person("Julien", "Emile-Geay", email = "julieneg@usc.edu",
+           role = "aut"))
+Maintainer: Tyler Bagwell <teb6@rice.edu>
+Description: Fits a Bayesian hierarchical AR(1) state-space model relating
+    global mean surface temperature (GMST) to a reduced paleoclimate proxy
+    network, instrumental temperature observations, and radiative forcings
+    (greenhouse gases, volcanic aerosols, and solar irradiance). Missing
+    pre-instrumental temperatures are estimated jointly with the model
+    parameters using 'Stan' via the 'instantiate' and 'cmdstanr' packages.
+    Includes tools to reduce a multi-proxy network to a single representative
+    proxy series (via principal component regression, partial least squares,
+    LASSO, or supervised PCR), fit the reconstruction model, run k-fold
+    cross-validation, and visualize reconstructions and posterior draws.
+    Implements the model described in Bagwell et al. (in prep).
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 4.1)
+Imports:
+    instantiate,
+    cmdstanr,
+    posterior,
+    ggplot2,
+    dplyr,
+    tidyr
+Suggests:
+    glmnet,
+    spls,
+    superpc,
+    dr,
+    patchwork,
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Additional_repositories: https://stan-dev.r-universe.dev/
+SystemRequirements: CmdStan (>= 2.26.0) -- see the 'instantiate' and
+    'cmdstanr' packages for installation instructions
+    (https://mc-stan.org/cmdstanr/articles/cmdstanr.html). BayGMST cannot fit
+    models without a working CmdStan installation; proxy-reduction and
+    forcing-transform utilities do not require it.
+URL: https://github.com/julieneg/BayGMST_R
+BugReports: https://github.com/julieneg/BayGMST_R/issues
+RoxygenNote: 7.3.2
+VignetteBuilder: knitr
+Config/testthat/edition: 3
