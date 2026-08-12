@@ -2,6 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath, amssymb}
+\usepackage[authoryear,round]{natbib}
 \usepackage{hyperref}
 \usepackage[margin=1in]{geometry}
 \usepackage{xcolor}
@@ -89,41 +90,54 @@ than keeping it in the reference manual once the real, \texttt{roxygen2}-generat
 version of this document is built, since \texttt{R CMD Rd2pdf} has no
 mechanism to reproduce a hand-added section like this one.}
 
-The equations below are a direct transcription of
-\texttt{src/stan/baygmst.stan} (verified by reading that file), presented
-using a proxy/temperature notation consistent with Barboza et al.\ (2019).
-\flag{On lineage: I have read Barboza et al.\ (2019) directly (source PDF
-supplied this session) but not Barboza et al.\ (2014) or Wang (2020)
-themselves, so I am careful not to overclaim equation-for-equation
-provenance. Barboza et al.\ (2019)'s own published equations (their \S 3.2,
-models ``NF''/``WF''/``Mixed'') use \emph{i.i.d.} errors, not the
-autoregressive (AR(1)) structure below -- they mention AR(1) only in
-passing, as an alternative error structure they tested without materially
-changing conclusions. Barboza et al.\ (2019)'s introduction attributes the
-joint state-space treatment of proxy and temperature, and the
-short-/long-memory error-structure comparison, to Barboza et al.\ (2014)
-(``B14'' in their text) -- so the AR(1) equations actually implemented here
-most likely trace to B14's specification rather than B19's own published
-one, but I have not read B14 directly to confirm the equations match
-exactly.} With $P_t$ the reduced/representative proxy series and $T_t$ the
-(possibly latent) global mean surface temperature:
+Global mean surface temperature (GMST) is a fundamental state variable of
+Earth's climate system and a central target of paleoclimate reconstruction
+efforts. Because direct instrumental measurements extend back only about
+150 years, estimates of GMST over longer periods must be inferred from
+indirect observations preserved in paleoclimate archives --- tree rings,
+glacier ice, corals and sclerosponges, lake and marine sediments, and
+historical documents \citep{mann1999, moberg2005}. A variety of statistical
+strategies have been developed to extract the climate signal contained in
+these ``proxies'' \citep{TINGLEY20121, Smerdon2016}, whether the target is
+a spatial climate field \citep{Smerdon2023} or an aggregated index such as
+GMST.
 
-\paragraph{Data level (proxy equation).}
+BayGMST's inference framework builds on the work of \citet{Barboza2014,
+Barboza2019} and \citet{wang2020}, who utilized a reduced proxy Bayesian
+approach that leverages not only the climate proxy network, but also
+estimates of past forcings (e.g., greenhouse gas concentrations, solar, and
+volcanic activity), which are known to influence GMST.
+
+Specifically, their Bayesian hierarchical modeling is based on computing a
+``reduced proxy'' $\boldsymbol{P} = (P_1,...,P_t,...,P_n)^T$ which is an
+aggregate of the available paleoclimate proxy observations. Several methods
+exist to do so, like principal component regression, partial least squares,
+sliced inverse regression, or a simple composite \citep{Barboza2019}. This
+quantity is then modeled as autoregressive and linearly dependent on the
+GMST, denoted $\boldsymbol{T} = (T_1,...,T_t,...,T_n)^T$ (subscript $t$
+refers to time in years CE). This is the model's data level:
 \begin{equation}
   P_t = \phi_P P_{t-1} + \alpha_0 + \alpha_1 T_t + \sigma_P \epsilon_t,
   \qquad \epsilon_t \overset{\text{iid}}{\sim} N(0, 1)
   \label{eq:proxy}
 \end{equation}
-
-\paragraph{Process level (temperature equation).}
+where $\phi_P$ denotes the lag-1 autocorrelation of $P$, the $\alpha$'s are
+coefficients, and $\sigma_P$ controls the amplitude of the unit-variance
+noise term $\epsilon$. The process level models $T_t$ as autoregressive and
+linearly dependent on the climate forcings $G_t$ (greenhouse gas
+concentrations), $V_t$ (related to volcanic aerosol optical depth), and
+$S_t$ (solar irradiance) -- already transformed, see
+\texttt{transform\_forcings()}:
 \begin{equation}
   T_t = \phi_T T_{t-1} + \beta_0 + \beta_G G_t + \beta_V V_t + \beta_S S_t + \sigma_T \eta_t,
   \qquad \eta_t \overset{\text{iid}}{\sim} N(0, 1)
   \label{eq:temp}
 \end{equation}
-where $G_t$, $V_t$, $S_t$ are the (already-transformed -- see
-\texttt{transform\_forcings()}) greenhouse-gas, volcanic, and solar
-forcings, and $|\phi_P|, |\phi_T| < 1$, $\sigma_P, \sigma_T > 0$.
+where $\phi_T$ denotes the lag-1 autocorrelation of $\boldsymbol{T}$, the
+$\beta$'s are constant coefficients, and $\sigma_T$ governs the amplitude
+of $\eta_t$. Gaussian white noise for both $\boldsymbol{\eta}$ and
+$\boldsymbol{\epsilon}$ provides good results \citep{wang2020}. Here
+$|\phi_P|, |\phi_T| < 1$ and $\sigma_P, \sigma_T > 0$.
 
 \rdsub{Mapping to the code}
 \begin{quote}
@@ -163,24 +177,22 @@ original \texttt{BayGMST\_v1.0.stan}; I have not evaluated their
 sensitivity or appropriateness -- that judgment belongs to Tyler/Julien.}
 
 \rdsub{Forcing data}
-Per Barboza et al.\ (2019, \S 2.3), the three external forcings used in this
+Per \citet{Barboza2019} (\S 2.3), the three external forcings used in this
 family of models are:
 \begin{itemize}
 \item \textbf{Volcanic forcing} ($V_t$): zonal-mean stratospheric aerosol
-  optical depth at 550\,nm, area-weighted and averaged to a global annual
-  estimate. Barboza et al.\ (2019) attribute this to the eVolv2k dataset,
-  citing Toohey et al.\ (2016); the eVolv2k dataset itself (500 BCE--1900
-  CE) is documented in Toohey and Sigl (2017).
+  optical depth at 550\,nm from the eVolv2k dataset \citep{evolv2k},
+  covering 500 BCE--1900 CE, area-weighted and averaged to a global annual
+  estimate.
 \item \textbf{Solar forcing} ($S_t$): total solar irradiance from the
-  SATIRE-H reconstruction (Vieira et al., 2011), decadal before 1940 CE and
+  SATIRE-H reconstruction \citep{Vieira_AA2011}, decadal before 1940 CE and
   daily thereafter, interpolated to annual resolution.
 \item \textbf{Greenhouse-gas forcing} ($G_t$): hemispheric-mean atmospheric
-  CO$_2$ mole fraction (ppm) at annual resolution (Meinshausen et al.,
-  2017), extended further back using ice-core-based compilations such as
-  the PMIP4-CMIP6 \texttt{past1000} forcing set (Jungclaus et al., 2017).
+  CO$_2$ mole fraction (ppm) at annual resolution \citep{Meinshausen_GMD2017},
+  extended further back using ice-core-based compilations such as the
+  PMIP4-CMIP6 \texttt{past1000} forcing set \citep{Jungclaus2017}.
 \end{itemize}
-Full citations for all of the above are in the References section.
-\flag{This description is Barboza et al.\ (2019)'s own account of \emph{their}
+\flag{This description is \citet{Barboza2019}'s own account of \emph{their}
 forcing data, offered here as the best available explanation of where this
 package's \texttt{data/forcing.csv} most likely originates, given the shared
 authorship and methodological lineage. I have not independently traced
@@ -188,15 +200,15 @@ authorship and methodological lineage. I have not independently traced
 documenting its source), so treat this as a well-informed inference, not a
 confirmed fact -- Tyler/Julien can confirm directly.}
 
-\flag{Barboza et al.\ (2019, \S 3.2) themselves use the transforms
+\flag{\citet{Barboza2019} (\S 3.2) themselves use the transforms
 $\tilde{C}_t = \log(C_t)$ (greenhouse gases) and $\tilde{V}_t =
-\log(-V_t + 1)$ (volcanic), citing Barboza et al.\ (2014) for the choice.
+\log(-V_t + 1)$ (volcanic), citing \citet{Barboza2014} for the choice.
 \texttt{transform\_forcings()} instead implements $G' =
 \texttt{co2\_coef} \times \log(G/\texttt{co2\_c0})$ and $V' =
 -|\texttt{vol\_coef}|(1-e^{-V})$ (see \texttt{?transform\_forcings}) -- the
 same log-CO2 spirit, but not an identical functional form, and a different
-saturating form for volcanic forcing. I have not read Wang (2020) or
-Barboza et al.\ (2014) directly, so I can't say whether this divergence
+saturating form for volcanic forcing. I have not read \citet{wang2020} or
+\citet{Barboza2014} directly, so I can't say whether this divergence
 originates in one of those or is specific to Tyler's own
 \texttt{BayGMST\_v1.0.R}; worth checking directly.}
 
@@ -315,7 +327,7 @@ fc\$G
 \rdsub{Description}
 Collapses a matrix of paleoclimate proxy records into a "representative
 proxy" series suitable for \texttt{fit\_baygmst()}, following the
-segmented-composite approach of Barboza et al.\ (2019), ported from
+segmented-composite approach of \citet{Barboza2019}, ported from
 \texttt{utils/PAGES2k\_reducedProxy\_UNSC.R}. The proxy network is broken
 into overlapping time segments of \texttt{chunk} years; within each
 segment, available proxies are regressed against instrumental temperature
@@ -564,58 +576,10 @@ installation available to run it. \texttt{CRAN-READINESS.md} has the exact
 commands to regenerate and verify them for real.}
 
 \clearpage
-\section*{References}
-
-\flag{Entries below were taken directly from
-\texttt{Bagwell\_thesis\_proposal\_for\_Julien/ref.bib} (Barboza 2014,
-Barboza 2019, Wang 2020, Jungclaus 2017) and from
-\texttt{JEG\_biblio.bib} (Toohey et al.\ 2016, Toohey and Sigl 2017,
-Meinshausen et al.\ 2017, Vieira et al.\ 2011) -- not reconstructed from
-memory. The Barboza et al.\ (2019) entry's DOI was additionally
-cross-checked against the actual PDF's title page.}
-
-\begin{quote}
-\noindent Barboza, L., Li, B., Tingley, M. P., and Viens, F. G. (2014).
-Reconstructing past temperatures from natural proxies and estimated climate
-forcings using short- and long-memory models. \emph{The Annals of Applied
-Statistics}, 8(4):1966--2001. doi:10.1214/14-AOAS785
-
-\vspace{0.5em}\noindent Barboza, L. A., Emile-Geay, J., Li, B., and He, W.
-(2019). Efficient Reconstructions of Common Era Climate via Integrated
-Nested Laplace Approximations. \emph{Journal of Agricultural, Biological,
-and Environmental Statistics}, 24(3):535--554.
-doi:10.1007/s13253-019-00372-4
-
-\vspace{0.5em}\noindent Jungclaus, J. H., Bard, E., Baroni, M., et al.
-(2017). The PMIP4 contribution to CMIP6 -- Part 3: The last millennium,
-scientific objective, and experimental design for the PMIP4
-\emph{past1000} simulations. \emph{Geoscientific Model Development},
-10(11):4005--4033.
-
-\vspace{0.5em}\noindent Meinshausen, M., Vogel, E., Nauels, A., et al.
-(2017). Historical greenhouse gas concentrations for climate modelling
-(CMIP6). \emph{Geoscientific Model Development}, 10(5):2057--2116.
-doi:10.5194/gmd-10-2057-2017
-
-\vspace{0.5em}\noindent Toohey, M., Stevens, B., Schmidt, H., and Timmreck,
-C. (2016). Easy Volcanic Aerosol (EVA v1.0): An idealized forcing generator
-for climate simulations. \emph{Geoscientific Model Development},
-9(11):4049--4070.
-
-\vspace{0.5em}\noindent Toohey, M. and Sigl, M. (2017). Volcanic
-stratospheric sulfur injections and aerosol optical depth from 500\,BCE to
-1900\,CE. \emph{Earth System Science Data}, 9(2):809--831.
-doi:10.5194/essd-9-809-2017
-
-\vspace{0.5em}\noindent Vieira, L. E. A., Solanki, S. K., Krivova, N. A.,
-and Usoskin, I. (2011). Evolution of the solar irradiance during the
-Holocene. \emph{Astronomy \& Astrophysics}, 531:A6.
-doi:10.1051/0004-6361/201015843
-
-\vspace{0.5em}\noindent Wang, H. (2020). \emph{Wiener-Chaos Analysis on
-Bayesian Models with Applications in Agriculture and Climatology}. Ph.D.
-dissertation, Michigan State University, East Lansing, MI.
-doi:10.25335/vb7s-rh49
-\end{quote}
+\flag{\texttt{references.bib} entries were copied directly from
+\texttt{Bagwell\_thesis\_proposal\_for\_Julien/ref.bib} and
+\texttt{JEG\_biblio.bib} -- not reconstructed from memory.}
+\bibliographystyle{agufull08}
+\bibliography{references}
 
 \end{document}
