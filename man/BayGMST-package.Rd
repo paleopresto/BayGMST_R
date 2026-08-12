@@ -50,6 +50,8 @@ Useful links:
 Authors:
 \itemize{
   \item Julien Emile-Geay \email{julieneg@usc.edu}
+  \item Frederi Viens
+  \item Nick McKay
 }
 
 }

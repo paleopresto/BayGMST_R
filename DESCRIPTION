@@ -6,7 +6,9 @@ Authors@R: c(
     person("Tyler", "Bagwell", email = "teb6@rice.edu",
            role = c("aut", "cre")),
     person("Julien", "Emile-Geay", email = "julieneg@usc.edu",
-           role = "aut"))
+           role = "aut"),
+    person("Frederi", "Viens", role = "aut"),
+    person("Nick", "McKay", role = "aut"))
 Maintainer: Tyler Bagwell <teb6@rice.edu>
 Description: Fits a Bayesian hierarchical AR(1) state-space model relating
     global mean surface temperature (GMST) to a reduced paleoclimate proxy
