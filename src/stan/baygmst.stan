@@ -108,13 +108,23 @@ generated quantities {
     real mu_help;
     real mu_y_help;
     if (t == 1){
+      // NOTE(BayGMST, revisited -- see NEWS.md "Known limitations"): y[NT_mis]
+      // and z[NT_mis] here use the *count* NT_mis as a direct vector index,
+      // flagged by the original author with "CHECK THIS LINE". Given how this
+      // pipeline actually builds its inputs -- missing (pre-instrumental)
+      // years always occupy positions 1:NT_mis and observed years always
+      // occupy the remaining, later positions, with no interleaving -- this
+      // is numerically equivalent to the presumably-intended
+      // y[idx_mis[NT_mis]] / z[idx_mis[NT_mis]] (the last pre-instrumental
+      // year), so it is *not* a live bug under normal use. It is fragile,
+      // undocumented shorthand, though: it would silently compute the wrong
+      // value if idx_mis/idx_obs were ever non-contiguous (e.g. a gap inside
+      // the instrumental record). Its effect is also narrowly scoped to
+      // y_ins_fitted[1] alone -- a posterior-predictive diagnostic value for
+      // the single earliest instrumental year -- not to the parameter
+      // posteriors or to y_mis, the pre-instrumental reconstruction itself.
       mu_y_help = phi_T * y[NT_mis] + mu_forcing[idx_obs[t]];
-      // TODO(BayGMST, unresolved -- flagged by original author, not fixed here,
-      // see NEWS.md "Known limitations"): z[NT_mis] indexes the proxy vector
-      // z with a *count* (NT_mis), not a time index. This likely should be
-      // z[idx_mis[NT_mis]], i.e. the proxy value at the last pre-instrumental
-      // year. Left unchanged pending Tyler/Julien's statistical review.
-      mu_help = (mu_y_help/sigma_y^2) + (alpha1 * (z[idx_obs[t]] - phi_R*z[NT_mis])/sigma_z^2); // CHECK THIS LINE
+      mu_help = (mu_y_help/sigma_y^2) + (alpha1 * (z[idx_obs[t]] - phi_R*z[NT_mis])/sigma_z^2);
     }
     else {
       mu_y_help = phi_T * y_ins_fitted[t-1] + mu_forcing[idx_obs[t]];

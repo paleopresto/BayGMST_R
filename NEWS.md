@@ -46,15 +46,26 @@ unchanged, under `inst/legacy-scripts/` for provenance.
 
 ## Known limitations (flagged for Tyler/Julien, not silently resolved)
 
-* **Unresolved possible bug carried forward unchanged:** in
+* **Fragile-but-correct indexing, flagged and clarified, not changed:** in
   `src/stan/baygmst.stan` (originally `BayGMST_v1.0.stan`), the
-  observed-period fitted-value block uses `z[NT_mis]` as an index into the
-  proxy vector at `t == 1`. `NT_mis` is a *count* of missing years, not a time
-  index, so this looks like it should likely be `z[idx_mis[NT_mis]]` (the
-  proxy value at the last pre-instrumental year) instead. The original author
-  flagged this with `// CHECK THIS LINE` and never resolved it. This
-  restructuring does not change model math without statistical sign-off, so
-  the line is unchanged -- see the reference manual for the exact location.
+  observed-period fitted-value block uses `y[NT_mis]` and `z[NT_mis]` as
+  indices into those vectors at `t == 1`. `NT_mis` is a *count*, not a time
+  index, and the original author flagged this with `// CHECK THIS LINE`. On
+  closer inspection (this session, after initially mischaracterizing it as a
+  likely bug): given how this pipeline actually constructs its inputs --
+  missing (pre-instrumental) years always occupy positions `1:NT_mis` and
+  observed years always occupy the remaining positions, with no interleaving
+  -- `y[NT_mis]`/`z[NT_mis]` are numerically equivalent to the presumably
+  intended `y[idx_mis[NT_mis]]`/`z[idx_mis[NT_mis]]`, so this is *not* a live
+  bug under normal use. It is undocumented, fragile shorthand, though: it
+  would silently compute the wrong value if the missing/observed years were
+  ever non-contiguous (e.g. an internal gap in the instrumental record), and
+  its effect is narrowly scoped to `y_ins_fitted[1]` alone (a
+  posterior-predictive diagnostic value for the single earliest instrumental
+  year) -- it does not touch the parameter posteriors or `y_mis`, the
+  pre-instrumental reconstruction that is the model's actual scientific
+  output. See the reference manual's Statistical Model section for the exact
+  equations this sits inside.
 * `reduce_proxies(method = "SIR")` mirrors the original script's SIR branch,
   which `config.yml` itself already documented as "still under construction."
   It is *not* recommended for use until validated.

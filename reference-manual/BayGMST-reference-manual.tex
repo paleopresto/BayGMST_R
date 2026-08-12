@@ -76,6 +76,112 @@ sign-off, not something I decided unilaterally.
 \clearpage
 \tableofcontents
 
+\clearpage
+\section{Statistical Model}
+\label{sec:model}
+
+\flag{This section is not part of a standard CRAN \texttt{Rd2pdf} reference
+manual -- those only ever contain per-topic help pages, never narrative
+model exposition. It's included here because it was explicitly requested,
+to connect the code to the underlying statistics. Consider moving it into
+\texttt{vignettes/baygmst-intro.Rmd} (or a separate paper/preprint) rather
+than keeping it in the reference manual once the real, \texttt{roxygen2}-generated
+version of this document is built, since \texttt{R CMD Rd2pdf} has no
+mechanism to reproduce a hand-added section like this one.}
+
+The model implemented in \texttt{src/stan/baygmst.stan} (via
+\texttt{fit\_baygmst()}) is the two-equation reduced-proxy Bayesian
+hierarchical model of Barboza et al.\ (2014, 2019) and Wang (2020), as
+described in Bagwell's thesis proposal (Rice University, Dept.\ of
+Statistics, ``Project II: Bayesian State-Space Reconstructions of GMST with
+Physically Motivated Ocean Memory,'' \S 2.1). Using the proposal's own
+notation (year subscript $t$), with $P_t$ the reduced/representative proxy
+series and $T_t$ the (possibly latent) global mean surface temperature:
+
+\paragraph{Data level (proxy equation).}
+\begin{equation}
+  P_t = \phi_P P_{t-1} + \alpha_0 + \alpha_1 T_t + \sigma_P \epsilon_t,
+  \qquad \epsilon_t \overset{\text{iid}}{\sim} N(0, 1)
+  \label{eq:proxy}
+\end{equation}
+
+\paragraph{Process level (temperature equation).}
+\begin{equation}
+  T_t = \phi_T T_{t-1} + \beta_0 + \beta_G G_t + \beta_V V_t + \beta_S S_t + \sigma_T \eta_t,
+  \qquad \eta_t \overset{\text{iid}}{\sim} N(0, 1)
+  \label{eq:temp}
+\end{equation}
+where $G_t$, $V_t$, $S_t$ are the (already-transformed -- see
+\texttt{transform\_forcings()}) greenhouse-gas, volcanic, and solar
+forcings, and $|\phi_P|, |\phi_T| < 1$, $\sigma_P, \sigma_T > 0$.
+
+\rdsub{Mapping to the code}
+\begin{quote}
+\begin{tabular}{@{}lll@{}}
+\textbf{Proposal notation} & \textbf{Stan parameter} & \textbf{R argument / role} \\
+\hline
+$T_t$ & \texttt{y} (transformed parameter) & \texttt{instrumental\_T} (observed part), \texttt{y\_mis} (reconstructed part) \\
+$P_t$ & \texttt{z} (data) & \texttt{proxy} -- see \texttt{reduce\_proxies()} \\
+$\phi_P$ & \texttt{phi\_R} & --- \\
+$\sigma_P$ & \texttt{sigma\_z} & --- \\
+$\alpha_0, \alpha_1$ & \texttt{alpha0}, \texttt{alpha1} & --- \\
+$\phi_T$ & \texttt{phi\_T} & --- \\
+$\sigma_T$ & \texttt{sigma\_y} & --- \\
+$\beta_0,\beta_G,\beta_V,\beta_S$ & \texttt{beta0}, \texttt{betaG}, \texttt{betaV}, \texttt{betaS} & --- \\
+$G_t, V_t, S_t$ & \texttt{G}, \texttt{V}, \texttt{S} (data) & \texttt{forcing\_G}, \texttt{forcing\_V}, \texttt{forcing\_S} \\
+\end{tabular}
+\end{quote}
+\flag{The Stan variable is named \texttt{phi\_R}/\texttt{sigma\_z} (``R'' for
+``reduced proxy,'' matching this specific implementation's single-series
+design) rather than \texttt{phi\_P}/\texttt{sigma\_P} as in the proposal's
+more general notation -- same quantity, different name. I did not rename
+the Stan code to match the proposal, to avoid touching model code beyond
+what was already agreed; flagging the mismatch here instead.}
+
+\rdsub{Priors}
+As specified in the Stan model's \texttt{model} block:
+\begin{quote}
+\begin{tabular}{@{}ll@{}}
+$\alpha_0, \alpha_1, \beta_0, \beta_G, \beta_V, \beta_S$ & $\sim N(0, 0.5)$ \\
+$\phi_P\ (\texttt{phi\_R}),\ \phi_T$ & $\sim N(0, 0.3)$ \\
+$\sigma_P\ (\texttt{sigma\_z}),\ \sigma_T\ (\texttt{sigma\_y})$ & $\sim \text{Exponential}(1)$ \\
+\end{tabular}
+\end{quote}
+\flag{These weakly informative priors are exactly as inherited from the
+original \texttt{BayGMST\_v1.0.stan}; I have not evaluated their
+sensitivity or appropriateness -- that judgment belongs to Tyler/Julien.}
+
+\rdsub{Simplification relative to the general proposal: no instrumental
+measurement-error layer}
+\gap{The thesis proposal's more general state-space formulation (\S 2.2,
+Eq.~5) adds a separate instrumental measurement equation
+$I_t = T_t + \sigma_I \xi_t$, treating the observed instrumental record
+$I_t$ as a \emph{noisy} realization of the latent true temperature $T_t$.
+\textbf{The model actually implemented here does not include that layer}:
+in \texttt{baygmst.stan}, \texttt{y[idx\_obs] = y\_obs} sets the latent
+state exactly equal to the raw instrumental values for observed years --
+i.e.\ instrumental temperature is treated as error-free. There is no
+$\sigma_I$ parameter in this implementation. This is a real, substantive
+simplification relative to the proposal's stated framework, not just a
+naming difference -- worth flagging explicitly since someone reading the
+proposal and then the code could otherwise assume they match exactly.}
+
+\rdsub{Not yet implemented: the proposal's main innovations}
+\gap{The thesis proposal's actual \emph{proposed innovations} (\S 2.2--2.3)
+-- (1) replacing the single reduced proxy $P_t$ with the full multivariate
+proxy network $P_{i,t}$, $i = 1,\dots,m$, estimated via a Kalman
+filter/smoother with hierarchical partial pooling on proxy sensitivities
+$\alpha_{i,1}$, and (2) replacing the AR(1) temperature equation
+(Eq.~\ref{eq:temp}) with a physically motivated multi-layer ocean-memory
+box model, $T_t = T_{t,\det}(G,V,S) + \sigma\,\boldsymbol{c}^\top
+\boldsymbol{x}_t$ with $\boldsymbol{x}_t$ a vector of Ornstein-Uhlenbeck
+processes at timescales $\boldsymbol{\tau}$ -- are \textbf{not implemented
+in this package}. They are the actual subject of Tyler's proposed thesis
+work, still to be written. Nothing in \texttt{BayGMST} 0.1.0 should be read
+as already delivering them; \texttt{reduce\_proxies()} still collapses the
+proxy network to a single series exactly as the \emph{current} (not
+proposed) reduced-proxy approach does.}
+
 \rdtopic{R topics documented:}
 \begin{quote}
 \begin{tabular}{ll}
@@ -403,12 +509,24 @@ package itself no longer calls it directly).}
 
 \clearpage
 \section*{Known limitations index}
-\gap{The unresolved possible bug in \texttt{src/stan/baygmst.stan}
-(\texttt{y\_ins\_fitted} block, \texttt{t == 1} branch: \texttt{z[NT\_mis]}
-used as an index where \texttt{z[idx\_mis[NT\_mis]]} looks more likely
-correct) is carried forward \emph{unchanged} from the original code. This
-restructuring does not alter model math without Tyler/Julien's statistical
-sign-off. See \texttt{NEWS.md} for the exact location and reasoning.}
+\flag{\texttt{src/stan/baygmst.stan}'s \texttt{y\_ins\_fitted} block
+(\texttt{t == 1} branch) indexes \texttt{y}/\texttt{z} with the count
+\texttt{NT\_mis} rather than \texttt{idx\_mis[NT\_mis]}, flagged by the
+original author with \texttt{// CHECK THIS LINE}. On inspection (see
+\S\ref{sec:model} and \texttt{NEWS.md}), this is numerically correct given
+how this pipeline's inputs are always laid out (missing years contiguous at
+the start, observed years contiguous at the end) -- \emph{not} the live bug
+I initially reported it as -- but it is fragile, undocumented shorthand
+that would break under non-contiguous missingness, and its effect is
+narrowly scoped to \texttt{y\_ins\_fitted[1]} alone, not to the parameter
+posteriors or to \texttt{y\_mis}. Left unchanged, since even a
+belt-and-suspenders self-documenting rewrite is a code change to model
+machinery that deserves Tyler/Julien's sign-off, not a unilateral one.}
+
+\gap{The thesis proposal's actual proposed innovations for Project II --
+the multivariate multi-proxy Kalman filter/smoother and the physically
+motivated multi-box ocean-memory temperature process -- are not
+implemented in this package version. See \S\ref{sec:model}.}
 
 \flag{Several \texttt{library()} calls in the original scripts
 (\texttt{car}, \texttt{fda}, \texttt{ggmap}, \texttt{maps}) had no evident
