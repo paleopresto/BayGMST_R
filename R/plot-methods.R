@@ -32,7 +32,7 @@ plot_reconstruction <- function(fit, title = "GMST Reconstruction") {
       ggplot2::aes(x = .data$year, y = .data$T_mean),
       color = "darkorchid4", linewidth = 0.55
     ) +
-    ggplot2::labs(x = "Year CE", y = "GMST Anomaly (°C)", title = title) +
+    ggplot2::labs(x = "Year CE", y = "GMST Anomaly (\u00b0C)", title = title) +
     ggplot2::theme_light(base_size = 11)
 }
 
@@ -50,7 +50,9 @@ plot_reconstruction <- function(fit, title = "GMST Reconstruction") {
 plot_trace <- function(fit,
                         parameters = c("alpha1", "betaG", "betaV", "betaS", "phi_R", "phi_T")) {
   stopifnot(inherits(fit, "baygmst_fit"))
-  draws_df <- fit$fit$draws(variables = parameters, format = "df")
+  # plain data.frame: subsetting a posterior 'draws_df' emits a
+  # "Dropping 'draws_df' class" warning downstream
+  draws_df <- as.data.frame(fit$fit$draws(variables = parameters, format = "df"))
 
   trace_df <- tidyr::pivot_longer(
     draws_df,
@@ -82,7 +84,7 @@ plot_trace <- function(fit,
 plot_posterior_densities <- function(fit,
                                       parameters = c("alpha1", "betaG", "betaV", "betaS", "phi_R", "phi_T")) {
   stopifnot(inherits(fit, "baygmst_fit"))
-  draws_df <- fit$fit$draws(variables = parameters, format = "df")
+  draws_df <- as.data.frame(fit$fit$draws(variables = parameters, format = "df"))
 
   df_hist <- tidyr::pivot_longer(
     draws_df[, parameters, drop = FALSE],
@@ -127,7 +129,7 @@ plot_cv <- function(cv) {
     ggplot2::geom_line(ggplot2::aes(y = .data$T_mean), color = "firebrick", linewidth = 0.6) +
     ggplot2::facet_wrap(~fold, scales = "free_x") +
     ggplot2::labs(
-      x = "Year", y = "GMST Anomaly (°C)",
+      x = "Year", y = "GMST Anomaly (\u00b0C)",
       title = "GMST Reconstructions via k-fold cross-validation",
       subtitle = sprintf("Median R2 = %.2f", stats::median(cv$r2))
     ) +

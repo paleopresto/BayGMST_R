@@ -9,9 +9,14 @@
 #' \code{config.yml} and hardcoded relative paths) and to return an object
 #' rather than leaving variables in the global environment.
 #'
-#' @param proxy Numeric vector, the (single) representative/reduced proxy
-#'   series -- see [reduce_proxies()] -- one value per year in `years`. No
-#'   missing values are allowed.
+#' @param proxy The representative/reduced proxy series. Either a bare
+#'   numeric vector with one value per year in `years` (aligned by
+#'   position, no missing values), or any object accepted by
+#'   [as_baygmst_proxy()] -- the output of [reduce_proxies()], a
+#'   `data.frame` with year and value columns, or a composite object from
+#'   another package (e.g. a 'compositeR' `paleoComposite`) -- in which
+#'   case it is aligned to `years` by calendar year, with an informative
+#'   error if any requested year is not covered.
 #' @param instrumental_T Numeric vector, instrumental temperature, one value
 #'   per year in `years`. `NA` for years without instrumental coverage (the
 #'   pre-instrumental years the model reconstructs).
@@ -33,6 +38,7 @@
 #'   \item{idx_obs, idx_mis}{Integer indices (into `years`) of the
 #'     instrumental and pre-instrumental years, respectively.}
 #'   \item{data}{The data list passed to Stan.}
+#'   \item{cmdstan_version}{The CmdStan version used, for provenance.}
 #'   \item{call}{The matched call.}
 #'   Use [reconstruct()] to extract a tidy reconstruction `data.frame`,
 #'   [plot_reconstruction()] / [plot_trace()] / [plot_posterior_densities()]
@@ -80,20 +86,15 @@ fit_baygmst <- function(proxy,
                          forcing_S,
                          years,
                          chains = 4,
-                         parallel_chains = 2,
+                         parallel_chains = 1,
                          iter_warmup = 500,
                          iter_sampling = 1500,
                          seed = NULL,
                          ...) {
   NT <- length(years)
-  stopifnot(
-    length(proxy) == NT,
-    length(instrumental_T) == NT,
-    length(forcing_G) == NT,
-    length(forcing_V) == NT,
-    length(forcing_S) == NT,
-    !anyNA(proxy), !anyNA(forcing_G), !anyNA(forcing_V), !anyNA(forcing_S)
-  )
+  proxy <- resolve_proxy(proxy, years)
+  check_model_inputs(proxy, instrumental_T, forcing_G, forcing_V, forcing_S,
+                     NT)
   if (iter_sampling < 1000) {
     stop("iter_sampling must be at least 1000.", call. = FALSE)
   }
@@ -103,6 +104,7 @@ fit_baygmst <- function(proxy,
   if (length(idx_obs) == 0) {
     stop("instrumental_T has no observed (non-NA) values.", call. = FALSE)
   }
+  check_cmdstan("fit_baygmst")
 
   data_list <- list(
     NT      = NT,
@@ -134,12 +136,13 @@ fit_baygmst <- function(proxy,
 
   structure(
     list(
-      fit     = fit,
-      years   = years,
-      idx_obs = idx_obs,
-      idx_mis = idx_mis,
-      data    = data_list,
-      call    = match.call()
+      fit             = fit,
+      years           = years,
+      idx_obs         = idx_obs,
+      idx_mis         = idx_mis,
+      data            = data_list,
+      cmdstan_version = as.character(cmdstanr::cmdstan_version()),
+      call            = match.call()
     ),
     class = "baygmst_fit"
   )

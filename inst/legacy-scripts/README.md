@@ -16,7 +16,8 @@ run by `R CMD check`.
 | `utils/PAGES2k_datagrabber.py` | Not ported (Python, outside an R package's scope). Kept for reference only. |
 | `BayGMST_v1.0.stan` | `src/stan/baygmst.stan` (content-identical port, see `NEWS.md`) |
 | `BayGMST_v1.0_5fcv.stan` | `src/stan/baygmst_cv.stan` (content-identical port, see `NEWS.md`) |
-| `BayGMST_v1.0`, `BayGMST_v1.0_5fcv` | Not ported -- these are **compiled CmdStan binaries** (~2 MB each), not source. They look like build output that ended up committed to git by accident rather than intentionally checked in. They're excluded from the built package (`.Rbuildignore`) but still live here in git history/tree; consider `git rm` + adding a `.gitignore` entry for compiled Stan executables in a follow-up commit, at your discretion. |
+| `BayGMST_v1.0`, `BayGMST_v1.0_5fcv` | Not ported -- these were **compiled CmdStan binaries** (~2 MB each) that had been committed by accident; removed from the repository tree in 2026-08 (they remain in git history). |
+| `config.yml` | The configuration file the original scripts read (moved here from the repository root). No package function reads it; its keys map onto function arguments now (e.g. `rp_method` -> `reduce_proxies(method = )`, `stan_params` -> `fit_baygmst()` sampling arguments). Note it contains a machine-specific `cmdstan_path` from the original author's machine. Excluded from the built package. |
 
 See `NEWS.md` at the package root for the specific bugs fixed and dead code
 dropped when porting these into the package's `R/` functions.

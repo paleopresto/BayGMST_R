@@ -40,21 +40,18 @@ cv_baygmst <- function(proxy,
                         years,
                         nfold = 3,
                         chains = 4,
-                        parallel_chains = 2,
+                        parallel_chains = 1,
                         iter_warmup = 500,
                         iter_sampling = 1500,
                         seed = NULL,
                         ...) {
   NT <- length(years)
-  stopifnot(
-    length(proxy) == NT,
-    length(instrumental_T) == NT,
-    length(forcing_G) == NT,
-    length(forcing_V) == NT,
-    length(forcing_S) == NT,
-    !anyNA(proxy), !anyNA(forcing_G), !anyNA(forcing_V), !anyNA(forcing_S),
-    nfold >= 2
-  )
+  proxy <- resolve_proxy(proxy, years)
+  check_model_inputs(proxy, instrumental_T, forcing_G, forcing_V, forcing_S,
+                     NT)
+  if (nfold < 2) {
+    stop("nfold must be at least 2.", call. = FALSE)
+  }
   if (iter_sampling < 1000) {
     stop("iter_sampling must be at least 1000.", call. = FALSE)
   }
@@ -63,6 +60,7 @@ cv_baygmst <- function(proxy,
   if (length(idx_full_obs) < nfold) {
     stop("Fewer instrumental observations than folds.", call. = FALSE)
   }
+  check_cmdstan("cv_baygmst")
   nobs_fold <- floor(length(idx_full_obs) / nfold)
 
   model <- instantiate::stan_package_model(name = "baygmst_cv", package = "BayGMST")

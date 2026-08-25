@@ -23,7 +23,6 @@ Description: Fits a Bayesian hierarchical AR(1) state-space model relating
     Implements the model described in Bagwell et al. (in prep).
 License: GPL (>= 3)
 Encoding: UTF-8
-LazyData: true
 Depends: R (>= 4.1)
 Imports:
     instantiate,
@@ -37,7 +36,6 @@ Suggests:
     spls,
     superpc,
     dr,
-    patchwork,
     testthat (>= 3.0.0),
     knitr,
     rmarkdown
@@ -47,8 +45,9 @@ SystemRequirements: CmdStan (>= 2.26.0) -- see the 'instantiate' and
     (https://mc-stan.org/cmdstanr/articles/cmdstanr.html). BayGMST cannot fit
     models without a working CmdStan installation; proxy-reduction and
     forcing-transform utilities do not require it.
-URL: https://github.com/julieneg/BayGMST_R
-BugReports: https://github.com/julieneg/BayGMST_R/issues
-RoxygenNote: 7.3.2
+URL: https://github.com/paleopresto/BayGMST_R
+BugReports: https://github.com/paleopresto/BayGMST_R/issues
+Roxygen: list(markdown = TRUE, load = "source")
+RoxygenNote: 7.3.3
 VignetteBuilder: knitr
 Config/testthat/edition: 3

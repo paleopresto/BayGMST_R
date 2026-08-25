@@ -1,10 +1,24 @@
 # CRAN readiness checklist
 
+**Status update (2026-08-25):** steps 1-4 below have now been executed for
+real on macOS ARM64 with R 4.5.2 and CmdStan 2.39.0. `roxygen2` regenerated
+`NAMESPACE`/`man/` (the hand-authored versions matched, aside from the new
+`as_baygmst_proxy()` interface added in the same session);
+`instantiate::stan_package_configure()` generated the five scaffold files;
+and `R CMD check --as-cran` on the built tarball passes with no ERRORs --
+all tests, examples (including `--run-donttest`), and the vignette
+(including actual sampling) succeed. The remaining WARNINGs/NOTEs are
+documented in `cran-comments.md` and are inherent to the 'instantiate'
+packaging pattern (cmdstanr via Additional_repositories; `-Wno-*` flags
+from the generated Makevars) or local tooling (old HTML Tidy,
+missing `checkbashisms`). Still open before submission: step 5's judgment
+items and step 7.
+
 This package was restructured on the `CRAN` branch in a sandbox with **no R
 installation available** -- every `.R`/`.stan`/`DESCRIPTION` file was
 hand-authored and statically cross-checked (grep, not `R CMD check`), but
-nothing here has actually been run. Treat this checklist as the bridge
-between "carefully hand-authored" and "actually verified."
+nothing had been run before the 2026-08-25 verification pass described
+above.
 
 ## 1. Regenerate documentation for real
 

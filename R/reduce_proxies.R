@@ -77,12 +77,13 @@
 #' `set.seed()`, so it never perturbs the caller's random number stream as a
 #' side effect.
 #'
-#' @return A list with components:
+#' @return An object of class `"baygmst_rp"`, a list with components:
 #'   \item{segments}{A data.frame with columns `year`, `RP1`, ..., `RPns`
 #'     (one column per time segment).}
 #'   \item{composite}{A data.frame with columns `year` and `RP1`, the
 #'     across-segment average -- the single representative proxy series to
-#'     pass to [fit_baygmst()].}
+#'     pass to [fit_baygmst()] (which accepts the whole object directly,
+#'     via [as_baygmst_proxy()]).}
 #'   \item{method}{The method used, echoed back.}
 #'
 #' @examples
@@ -207,7 +208,8 @@ reduce_proxies <- function(proxy_matrix,
           "the calibration window (this mirrors an explicit check in the",
           "original PAGES2k_reducedProxy_UNSC.R script) -- increase `chunk`",
           "so that even the last, shortest segment still spans the full",
-          "calibration period."
+          "calibration period. The simplest fix is a single segment:",
+          "`chunk = length(years)`."
         ),
         k, length(calib_idx_seg), length(temp_calib)
       ), call. = FALSE)
@@ -230,7 +232,22 @@ reduce_proxies <- function(proxy_matrix,
   segments  <- data.frame(year = years, RP, check.names = FALSE)
   composite <- data.frame(year = years, RP1 = apply(RP, 1, mean, na.rm = TRUE))
 
-  list(segments = segments, composite = composite, method = method)
+  structure(
+    list(segments = segments, composite = composite, method = method),
+    class = "baygmst_rp"
+  )
+}
+
+#' @export
+print.baygmst_rp <- function(x, ...) {
+  cat("<baygmst_rp>\n")
+  cat(sprintf("  Method:   %s\n", x$method))
+  cat(sprintf("  Years:    %s to %s (n = %d)\n",
+              format(min(x$composite$year)), format(max(x$composite$year)),
+              nrow(x$composite)))
+  cat(sprintf("  Segments: %d\n", ncol(x$segments) - 1L))
+  cat("  Pass to fit_baygmst() directly, or use x$composite$RP1.\n")
+  invisible(x)
 }
 
 #' @param proxy_seg Numeric matrix (rows = years in this segment, columns =

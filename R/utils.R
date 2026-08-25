@@ -1,29 +1,19 @@
-# Internal utilities. Not exported -- see man/ for the documented, exported
-# API.
+# Internal utilities. Not exported.
 
-#' Validate a partition-year argument
+#' Stop early, with installation instructions, if CmdStan is unavailable
 #'
-#' @param x A candidate year value.
-#' @param name The argument name, used in error messages.
-#' @return Invisibly `NULL`. Called for its side effect of raising an
-#'   informative error if `x` is not a single, finite, positive integer.
+#' Called by [fit_baygmst()] and [cv_baygmst()] before touching the Stan
+#' model, so users get an actionable message rather than a low-level
+#' compilation error.
 #' @noRd
-check_year <- function(x, name) {
-  if (is.null(x)) {
-    stop(sprintf("%s is missing.", name), call. = FALSE)
-  }
-  if (
-    !is.numeric(x) ||
-    length(x) != 1 ||
-    is.na(x) ||
-    !is.finite(x) ||
-    x <= 0 ||
-    x != as.integer(x)
-  ) {
-    stop(sprintf("%s must be a single positive integer.", name), call. = FALSE)
+check_cmdstan <- function(fun) {
+  if (!instantiate::stan_cmdstan_exists()) {
+    stop(
+      fun, "() requires a working CmdStan installation. Install one with ",
+      "cmdstanr::install_cmdstan(), then check ",
+      "instantiate::stan_cmdstan_exists(). See ?BayGMST for details.",
+      call. = FALSE
+    )
   }
   invisible(NULL)
 }
-
-#' @noRd
-`%||%` <- function(x, y) if (is.null(x)) y else x

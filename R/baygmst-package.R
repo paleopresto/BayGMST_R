@@ -5,7 +5,10 @@
 #' instrumental temperature observations, and radiative forcings
 #' (greenhouse gases, volcanic aerosols, and solar irradiance). See
 #' \code{vignette("baygmst-intro", package = "BayGMST")} for a worked
-#' end-to-end example.
+#' end-to-end example, and
+#' \code{vignette("baygmst-model", package = "BayGMST")} for the full
+#' statistical model description, which builds on the reduced-proxy
+#' Bayesian framework of Barboza et al. (2014, 2019) and Wang (2020).
 #'
 #' @section Model fitting requires CmdStan:
 #' [fit_baygmst()] and [cv_baygmst()] compile and sample a 'Stan' model via

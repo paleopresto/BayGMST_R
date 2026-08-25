@@ -21,10 +21,34 @@ unchanged, under `inst/legacy-scripts/` for provenance.
   the original script), without writing to disk.
 * `cv_baygmst()` -- ported from the k-fold loop in `cv_v0.1.R`.
 * `plot_reconstruction()`, `plot_trace()`, `plot_posterior_densities()`,
-  `plot_cv()` -- return `ggplot`/`patchwork` objects instead of calling
-  `ggsave()` as a side effect.
+  `plot_cv()` -- return `ggplot` objects instead of calling `ggsave()` as a
+  side effect.
 * `print.baygmst_fit()`, `summary.baygmst_fit()`, `print.baygmst_cv()` S3
   methods.
+* `as_baygmst_proxy()` -- normalizes the shapes a reduced/composited proxy
+  series can arrive in (the output of `reduce_proxies()`, a `data.frame`, a
+  bare vector, a time-by-ensemble matrix, or a composite object from
+  another package such as a 'compositeR' `paleoComposite`, with ages in yr
+  BP converted to calendar years and ensembles collapsed to a median
+  series) into a year-aware `baygmst_proxy` object. `fit_baygmst()` and
+  `cv_baygmst()` accept these objects (or anything coercible) directly and
+  align them to `years` by calendar year; the original bare-vector,
+  positional interface is unchanged. Ensemble inputs are collapsed before
+  fitting in this release (compositing uncertainty is not yet propagated);
+  the object records `n_ensemble` for a future ensemble-aware pathway.
+* `reduce_proxies()` output now carries class `baygmst_rp` (same list
+  structure as before) with a `print()` method.
+* `summary()` on a fitted model now reports convergence diagnostics
+  (`max_rhat`, `min_ess_bulk`) and its print method warns prominently when
+  `max_rhat > 1.05` (surfaced by a Holocene-scale stress test in which a
+  poorly identified fit previously printed without complaint).
+* `plot_trace()` and `plot_posterior_densities()` no longer emit
+  "Dropping 'draws_df' class" warnings.
+* New vignette `baygmst-model` describing the statistical model (data and
+  process levels, priors, forcing provenance, and the mapping to the Stan
+  code), ported from the hand-typeset draft reference manual's
+  "Statistical Model" section. It explicitly credits the reduced-proxy
+  Bayesian framework of Barboza et al. (2014, 2019) and Wang (2020).
 
 ## Fixed relative to the original scripts
 
@@ -73,6 +97,9 @@ unchanged, under `inst/legacy-scripts/` for provenance.
   `ggmap`, `maps`) had no evident corresponding usage in the code as written,
   so they were not carried into `Imports`/`Suggests`. Re-add them if a hidden
   use is found.
-* `data/HadCRUT.5.1.0.0.analysis.anomalies.ensemble_mean.nc` (31 MB) is not
-  read by any ported function and is excluded from the installable package.
-  Decide whether to keep it in the repo at all.
+* `data/HadCRUT.5.1.0.0.analysis.anomalies.ensemble_mean.nc` (31 MB) was not
+  read by any ported function and has been removed from the repository tree
+  (it remains in git history), along with the compiled CmdStan binaries in
+  `inst/legacy-scripts/` and the `outputs/` build artifacts. The legacy
+  `config.yml` moved to `inst/legacy-scripts/config.yml`; no package
+  function reads it.

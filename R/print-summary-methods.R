@@ -15,6 +15,9 @@ print.baygmst_fit <- function(x, ...) {
     "  Chains/draws:   %d chains, %d post-warmup draws each\n",
     x$fit$num_chains(), x$fit$metadata()$iter_sampling
   ))
+  if (!is.null(x$cmdstan_version)) {
+    cat(sprintf("  CmdStan:        %s\n", x$cmdstan_version))
+  }
   cat("  Call:           ")
   print(x$call)
   invisible(x)
@@ -31,9 +34,11 @@ print.baygmst_fit <- function(x, ...) {
 #' @param ... Unused; present for S3 consistency.
 #'
 #' @return An object of class `"summary.baygmst_fit"`, a list with elements
-#'   `posterior` (a data.frame of parameter posterior summaries) and
+#'   `posterior` (a data.frame of parameter posterior summaries),
 #'   `performance` (a one-row data.frame of instrumental-period fit
-#'   statistics).
+#'   statistics), and `convergence` (a one-row data.frame with `max_rhat`
+#'   and `min_ess_bulk` across the structural parameters; the print method
+#'   warns when `max_rhat` exceeds 1.05).
 #' @export
 summary.baygmst_fit <- function(object, ...) {
   posterior_summary <- object$fit$summary(variables = c(
@@ -64,8 +69,16 @@ summary.baygmst_fit <- function(object, ...) {
     R2_detrended    = r2_detrended
   )
 
+  max_rhat <- suppressWarnings(max(posterior_summary$rhat, na.rm = TRUE))
+  min_ess  <- suppressWarnings(min(posterior_summary$ess_bulk, na.rm = TRUE))
+  convergence <- data.frame(
+    max_rhat     = if (is.finite(max_rhat)) max_rhat else NA_real_,
+    min_ess_bulk = if (is.finite(min_ess)) min_ess else NA_real_
+  )
+
   structure(
-    list(posterior = posterior_summary, performance = performance),
+    list(posterior = posterior_summary, performance = performance,
+         convergence = convergence),
     class = "summary.baygmst_fit"
   )
 }
@@ -76,5 +89,15 @@ print.summary.baygmst_fit <- function(x, ...) {
   print(as.data.frame(x$posterior))
   cat("\nInstrumental-period fit performance:\n")
   print(x$performance, row.names = FALSE)
+  if (!is.null(x$convergence) && isTRUE(x$convergence$max_rhat > 1.05)) {
+    cat(sprintf(
+      paste0(
+        "\nWARNING: sampler has not converged (max rhat = %.2f, min bulk",
+        " ESS = %.0f).\nDo not interpret these results; increase",
+        " iter_warmup/iter_sampling and chains,\nand inspect plot_trace().\n"
+      ),
+      x$convergence$max_rhat, x$convergence$min_ess_bulk
+    ))
+  }
   invisible(x)
 }

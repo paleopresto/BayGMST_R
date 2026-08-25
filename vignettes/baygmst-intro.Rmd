@@ -67,11 +67,14 @@ rp <- reduce_proxies(
   # default of 250, which would create a too-short trailing segment here.
   chunk        = nrow(proxy_matrix)
 )
-head(rp$composite)
+rp
 ```
 
-`rp$composite$RP1` is the representative proxy series to pass to
-`fit_baygmst()`.
+`rp` can be passed to `fit_baygmst()` directly (it is aligned to the model's
+year grid by calendar year, via `as_baygmst_proxy()`); the raw series lives
+in `rp$composite$RP1` if you need it. You do not have to use
+`reduce_proxies()` at all -- any reduced or composited proxy series works
+here; see "Using composites from other packages" below.
 
 ## 3. Transform the radiative forcings
 
@@ -85,9 +88,13 @@ forcing <- transform_forcings(
 
 ## 4. Align everything onto the common year grid and fit the model
 
+The proxy series is aligned automatically (by calendar year) when you pass
+the `reduce_proxies()` output itself; the instrumental series still needs
+aligning onto `years` by hand, with `NA` marking the pre-instrumental years
+the model will reconstruct:
+
 ```{r align}
 instrumental_T <- instrumental_raw$Anomaly[match(years, instrumental_raw$Time)]
-proxy <- rp$composite$RP1[match(years, rp$composite$year)]
 ```
 
 Fitting requires a working CmdStan installation (via \pkg{cmdstanr} /
@@ -96,7 +103,7 @@ don't have one yet. The chunk below is skipped if none is found.
 
 ```{r fit, eval = has_cmdstan}
 fit <- fit_baygmst(
-  proxy          = proxy,
+  proxy          = rp,
   instrumental_T = instrumental_T,
   forcing_G      = forcing$G,
   forcing_V      = forcing$V,
@@ -129,7 +136,7 @@ plot_posterior_densities(fit)
 
 ```{r cv, eval = has_cmdstan}
 cv <- cv_baygmst(
-  proxy          = proxy,
+  proxy          = rp,
   instrumental_T = instrumental_T,
   forcing_G      = forcing$G,
   forcing_V      = forcing$V,
@@ -145,6 +152,46 @@ cv <- cv_baygmst(
 cv
 plot_cv(cv)
 ```
+
+## 7. Using composites from other packages
+
+`reduce_proxies()` is one way to produce the model's proxy input, but not
+the only one. `fit_baygmst()`'s proxy equation estimates its own intercept
+and slope against temperature, so any reduced or composited proxy series on
+a reasonable scale works -- a standardized (z-score) composite or a
+temperature-anomaly-scale series is appropriate; a raw-unit series with
+large numerical magnitude should be standardized first.
+
+`as_baygmst_proxy()` normalizes the common shapes such a series arrives in.
+In particular, it accepts composite objects of the shape produced by
+compositing packages in the LiPD ecosystem (such as the in-development
+[compositeR](https://github.com/nickmckay/compositeR) package, whose
+`compositeEnsembles2()` is the intended primary pathway for building
+BayGMST inputs from paleoclimate data): a list carrying `$ages` (in years
+BP, i.e. before 1950 CE) and `$composite` (rows = time steps, columns =
+ensemble members). Here is a synthetic stand-in:
+
+```{r byo-composite}
+set.seed(1)
+composite_ens <- list(
+  ages      = seq(250, -50, by = -1),               # 1700-2000 CE, in yr BP
+  composite = matrix(rnorm(301 * 50, sd = 0.2), 301, 50) +
+    seq(-0.2, 0.4, length.out = 301)                # 50 ensemble members
+)
+
+proxy_input <- as_baygmst_proxy(composite_ens)
+proxy_input
+```
+
+Ages are converted to calendar years and the ensemble is collapsed to its
+median series (compositing uncertainty is therefore not yet propagated into
+the posterior; the object records `n_ensemble` so this can become an
+ensemble-aware pathway in a future release). The result can be passed
+straight to `fit_baygmst(proxy = proxy_input, ...)`, which aligns it to
+`years` by calendar year and errors informatively if any requested year is
+not covered. Bare numeric vectors, `data.frame`s with year and value
+columns, and time-by-ensemble matrices work the same way -- see
+`?as_baygmst_proxy`.
 
 ## Known limitations
 
