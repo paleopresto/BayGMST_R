@@ -20,11 +20,14 @@ Bayesian framework of Barboza et al. (2014, 2019) and Wang (2020).
 
 \code{\link[=fit_baygmst]{fit_baygmst()}} and \code{\link[=cv_baygmst]{cv_baygmst()}} compile and sample a 'Stan' model via
 the \pkg{instantiate} and \pkg{cmdstanr} packages, which in turn require a
-working CmdStan installation on the user's machine. Use
-\code{instantiate::stan_cmdstan_exists()} to check whether one is
-available, and see \code{vignette("cmdstanr", package = "cmdstanr")} for
-setup instructions. \code{\link[=reduce_proxies]{reduce_proxies()}} and \code{\link[=transform_forcings]{transform_forcings()}} do not
-require CmdStan.
+working CmdStan installation on the user's machine. \pkg{cmdstanr} is not
+on CRAN; install it from \url{https://stan-dev.r-universe.dev}, then run
+\code{cmdstanr::install_cmdstan()}. BayGMST compiles its Stan models when
+it is installed, and only if \pkg{cmdstanr} and CmdStan are available at
+that moment, so install them first, or reinstall BayGMST after adding
+them. Use \code{instantiate::stan_cmdstan_exists()} to check whether
+CmdStan is available. \code{\link[=reduce_proxies]{reduce_proxies()}} and \code{\link[=transform_forcings]{transform_forcings()}} do
+not require CmdStan.
 }
 
 \section{Provenance}{
@@ -39,6 +42,7 @@ original, unmodified scripts.
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://paleopresto.github.io/BayGMST_R/}
   \item \url{https://github.com/paleopresto/BayGMST_R}
   \item Report bugs at \url{https://github.com/paleopresto/BayGMST_R/issues}
 }

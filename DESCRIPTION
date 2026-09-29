@@ -29,12 +29,12 @@ Language: en-US
 Depends: R (>= 4.1)
 Imports:
     instantiate,
-    cmdstanr,
     posterior,
     ggplot2 (>= 3.5.0),
     dplyr,
     tidyr
 Suggests:
+    cmdstanr,
     glmnet,
     spls,
     superpc,
@@ -49,7 +49,7 @@ SystemRequirements: CmdStan (>= 2.26.0) -- see the 'instantiate' and
     (https://mc-stan.org/cmdstanr/articles/cmdstanr.html). BayGMST cannot fit
     models without a working CmdStan installation; proxy-reduction and
     forcing-transform utilities do not require it.
-URL: https://github.com/paleopresto/BayGMST_R
+URL: https://paleopresto.github.io/BayGMST_R/, https://github.com/paleopresto/BayGMST_R
 BugReports: https://github.com/paleopresto/BayGMST_R/issues
 Roxygen: list(markdown = TRUE, load = "source")
 RoxygenNote: 7.3.3

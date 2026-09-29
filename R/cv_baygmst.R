@@ -60,10 +60,8 @@ cv_baygmst <- function(proxy,
   if (length(idx_full_obs) < nfold) {
     stop("Fewer instrumental observations than folds.", call. = FALSE)
   }
-  check_cmdstan("cv_baygmst")
+  model <- baygmst_model("baygmst_cv", "cv_baygmst")
   nobs_fold <- floor(length(idx_full_obs) / nfold)
-
-  model <- instantiate::stan_package_model(name = "baygmst_cv", package = "BayGMST")
 
   fold_frames <- vector("list", nfold)
   r2  <- stats::setNames(numeric(nfold), paste0("fold", seq_len(nfold)))

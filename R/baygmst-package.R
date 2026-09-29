@@ -13,11 +13,14 @@
 #' @section Model fitting requires CmdStan:
 #' [fit_baygmst()] and [cv_baygmst()] compile and sample a 'Stan' model via
 #' the \pkg{instantiate} and \pkg{cmdstanr} packages, which in turn require a
-#' working CmdStan installation on the user's machine. Use
-#' \code{instantiate::stan_cmdstan_exists()} to check whether one is
-#' available, and see \code{vignette("cmdstanr", package = "cmdstanr")} for
-#' setup instructions. [reduce_proxies()] and [transform_forcings()] do not
-#' require CmdStan.
+#' working CmdStan installation on the user's machine. \pkg{cmdstanr} is not
+#' on CRAN; install it from \url{https://stan-dev.r-universe.dev}, then run
+#' \code{cmdstanr::install_cmdstan()}. BayGMST compiles its Stan models when
+#' it is installed, and only if \pkg{cmdstanr} and CmdStan are available at
+#' that moment, so install them first, or reinstall BayGMST after adding
+#' them. Use \code{instantiate::stan_cmdstan_exists()} to check whether
+#' CmdStan is available. [reduce_proxies()] and [transform_forcings()] do
+#' not require CmdStan.
 #'
 #' @section Provenance:
 #' This package was restructured from a collection of top-level analysis
