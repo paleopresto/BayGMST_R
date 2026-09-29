@@ -104,7 +104,7 @@ fit_baygmst <- function(proxy,
   if (length(idx_obs) == 0) {
     stop("instrumental_T has no observed (non-NA) values.", call. = FALSE)
   }
-  check_cmdstan("fit_baygmst")
+  model <- baygmst_model("baygmst", "fit_baygmst")
 
   data_list <- list(
     NT      = NT,
@@ -119,10 +119,6 @@ fit_baygmst <- function(proxy,
     z       = as.vector(proxy)
   )
 
-  # `model` is a cmdstanr CmdStanModel object. cmdstanr is only in Suggests
-  # (it is not on CRAN); check_cmdstan() above has already confirmed that it
-  # and CmdStan are installed, via instantiate::stan_cmdstan_exists().
-  model <- instantiate::stan_package_model(name = "baygmst", package = "BayGMST")
   fit <- model$sample(
     data             = data_list,
     chains           = chains,

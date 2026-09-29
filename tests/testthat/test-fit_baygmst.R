@@ -57,3 +57,27 @@ test_that("fit_baygmst fits and reconstruct()/summary() work end to end", {
   expect_s3_class(s, "summary.baygmst_fit")
   expect_true(all(c("RMSE", "MAE", "Bias", "Correlation", "R2") %in% names(s$performance)))
 })
+
+test_that("an uncompiled packaged model gives reinstall instructions", {
+  # CmdStan present, but the model was not compiled at install time
+  local_mocked_bindings(
+    stan_cmdstan_exists = function(...) TRUE,
+    stan_package_model = function(...) {
+      list(exe_file = function() file.path(tempdir(), "no-such-model"))
+    },
+    .package = "instantiate"
+  )
+  expect_error(
+    BayGMST:::baygmst_model("baygmst", "fit_baygmst"),
+    "was not compiled.*Reinstall BayGMST"
+  )
+})
+
+test_that("missing CmdStan gives installation instructions", {
+  local_mocked_bindings(stan_cmdstan_exists = function(...) FALSE,
+                        .package = "instantiate")
+  expect_error(
+    BayGMST:::baygmst_model("baygmst", "fit_baygmst"),
+    "fit_baygmst\\(\\) requires the 'cmdstanr' package.*install_cmdstan"
+  )
+})
