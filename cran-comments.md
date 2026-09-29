@@ -5,7 +5,8 @@ This is the first submission of BayGMST.
 ## Test environments
 
 - local macOS (ARM64), R 4.5.2, with CmdStan 2.39.0
-- win-builder, R-devel
+- win-builder, R-devel (without cmdstanr: 1 NOTE, described below)
+- R-hub: Linux, macOS (ARM64), and Windows, R-devel
 
 ## R CMD check results
 
