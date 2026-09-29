@@ -1,0 +1,46 @@
+url: https://paleopresto.github.io/BayGMST_R/
+
+template:
+  bootstrap: 5
+
+home:
+  title: "BayGMST: Bayesian Reconstruction of Global Mean Surface Temperature"
+
+articles:
+- title: Get started
+  contents:
+  - baygmst-intro
+- title: Methods
+  contents:
+  - baygmst-model
+
+reference:
+- title: Prepare proxy inputs
+  desc: >
+    Reduce a multi-proxy network to a representative series, or bring a
+    reduced/composited series from elsewhere (including compositeR-style
+    composite ensembles).
+  contents:
+  - reduce_proxies
+  - as_baygmst_proxy
+- title: Transform forcings
+  contents:
+  - transform_forcings
+- title: Fit and cross-validate the model
+  desc: Requires a working CmdStan installation.
+  contents:
+  - fit_baygmst
+  - cv_baygmst
+- title: Extract and visualize results
+  contents:
+  - reconstruct
+  - summary.baygmst_fit
+  - print.baygmst_fit
+  - plot.baygmst_fit
+  - plot_reconstruction
+  - plot_trace
+  - plot_posterior_densities
+  - plot_cv
+- title: Package overview
+  contents:
+  - BayGMST-package

@@ -47,3 +47,6 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+.DS_Store
+outputs/.DS_Store
+tests/testthat/Rplots.pdf
