@@ -119,10 +119,9 @@ fit_baygmst <- function(proxy,
     z       = as.vector(proxy)
   )
 
-  # `model` is a cmdstanr CmdStanModel object; its $sample() method is
-  # provided by cmdstanr, not instantiate, which is why cmdstanr must stay a
-  # real Imports (not just Suggests) even though it's never called via
-  # `cmdstanr::` here -- see the instantiate package's own packaging guidance.
+  # `model` is a cmdstanr CmdStanModel object. cmdstanr is only in Suggests
+  # (it is not on CRAN); check_cmdstan() above has already confirmed that it
+  # and CmdStan are installed, via instantiate::stan_cmdstan_exists().
   model <- instantiate::stan_package_model(name = "baygmst", package = "BayGMST")
   fit <- model$sample(
     data             = data_list,

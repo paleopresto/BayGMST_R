@@ -29,12 +29,12 @@ Language: en-US
 Depends: R (>= 4.1)
 Imports:
     instantiate,
-    cmdstanr,
     posterior,
     ggplot2 (>= 3.5.0),
     dplyr,
     tidyr
 Suggests:
+    cmdstanr,
     glmnet,
     spls,
     superpc,
