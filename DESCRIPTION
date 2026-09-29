@@ -4,12 +4,12 @@ Title: Bayesian Reconstruction of Global Mean Surface Temperature
 Version: 0.1.0
 Authors@R: c(
     person("Tyler", "Bagwell", email = "teb6@rice.edu",
-           role = c("aut", "cre")),
+           role = "aut"),
     person("Julien", "Emile-Geay", email = "julieneg@usc.edu",
            role = "aut"),
     person("Frederi", "Viens", role = "aut"),
-    person("Nick", "McKay", role = "aut"))
-Maintainer: Tyler Bagwell <teb6@rice.edu>
+    person("Nick", "McKay", email = "nick@nau.edu",
+           role = c("aut", "cre")))
 Description: Fits a Bayesian hierarchical AR(1)-driven state-space model
     relating annual global mean surface temperature (GMST) to a reduced
     paleoclimate proxy (computed from cached or user-specified paleoclimate

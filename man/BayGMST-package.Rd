@@ -45,13 +45,13 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Tyler Bagwell \email{teb6@rice.edu}
+\strong{Maintainer}: Nick McKay \email{nick@nau.edu}
 
 Authors:
 \itemize{
+  \item Tyler Bagwell \email{teb6@rice.edu}
   \item Julien Emile-Geay \email{julieneg@usc.edu}
   \item Frederi Viens
-  \item Nick McKay
 }
 
 }

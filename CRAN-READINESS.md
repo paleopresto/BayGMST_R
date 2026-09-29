@@ -34,12 +34,13 @@ hand-typeset draft reference manual was retired (its model section lives in
   canonical) so the public repo matches the submitted package.
 - [ ] Run `devtools::spell_check()`, then the remote checks
   `devtools::check_win_devel()` and `rhub::rhub_check()`. Win-builder emails
-  the maintainer (Tyler), so coordinate with him.
+  the maintainer (Nick McKay).
 - [ ] Re-run `R CMD check --as-cran` with the remote incoming checks on
   (after the repo is public) and update `cran-comments.md` with the
   win-builder/R-hub environments.
-- [ ] Tyler, as maintainer, submits via <https://cran.r-project.org/submit.html>
-  and confirms the email CRAN sends to <teb6@rice.edu>.
+- [ ] Nick McKay, as maintainer, submits via
+  <https://cran.r-project.org/submit.html> and confirms the email CRAN
+  sends to <nick@nau.edu>.
 
 ## Notes for working on the package
 
