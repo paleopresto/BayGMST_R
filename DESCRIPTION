@@ -25,6 +25,7 @@ Description: Fits a Bayesian hierarchical AR(1)-driven state-space model
     visualize reconstructions and posterior draws.
 License: GPL (>= 3)
 Encoding: UTF-8
+Language: en-US
 Depends: R (>= 4.1)
 Imports:
     instantiate,
