@@ -1,0 +1,238 @@
+# The BayGMST statistical model
+
+This vignette describes the statistical model implemented by
+[`fit_baygmst()`](https://paleopresto.github.io/BayGMST_R/reference/fit_baygmst.md),
+connecting the code to the underlying statistics and to the literature
+it descends from. For a hands-on walkthrough of the software, see
+[`vignette("baygmst-intro", package = "BayGMST")`](https://paleopresto.github.io/BayGMST_R/articles/baygmst-intro.md).
+
+## Background
+
+Global mean surface temperature (GMST) is a fundamental state variable
+of Earth’s climate system and a central target of paleoclimate
+reconstruction efforts. Because direct instrumental measurements extend
+back only about 150 years, estimates of GMST over longer periods must be
+inferred from indirect observations preserved in paleoclimate archives:
+tree rings, glacier ice, corals and sclerosponges, lake and marine
+sediments, and historical documents (Mann et al., 1999; Moberg et al.,
+2005). A variety of statistical strategies have been developed to
+extract the climate signal contained in these “proxies” (Tingley et al.,
+2012; Smerdon and Pollack, 2016), whether the target is a spatial
+climate field (Smerdon et al., 2023) or an aggregated index such as
+GMST.
+
+## Intellectual ancestry
+
+BayGMST’s inference framework builds directly on the work of Barboza et
+al. (2014, 2019) and Wang (2020), who utilized a reduced proxy Bayesian
+approach that leverages not only the climate proxy network, but also
+estimates of past forcings (e.g., greenhouse gas concentrations, solar,
+and volcanic activity), which are known to influence GMST. The model
+below is their hierarchical formulation; BayGMST packages it, with the
+implementation choices noted in this vignette.
+
+## The hierarchical model
+
+The approach is based on computing a “reduced proxy”
+$`\boldsymbol{P} = (P_1, \ldots, P_t, \ldots, P_n)^T`$, an aggregate of
+the available paleoclimate proxy observations. Several methods exist to
+do so, like principal component regression, partial least squares,
+sliced inverse regression, or a simple composite (Barboza et al., 2019);
+see
+[`reduce_proxies()`](https://paleopresto.github.io/BayGMST_R/reference/reduce_proxies.md)
+for the methods implemented here, and
+[`as_baygmst_proxy()`](https://paleopresto.github.io/BayGMST_R/reference/as_baygmst_proxy.md)
+for supplying a reduced or composited series built elsewhere. This
+quantity is then modeled as autoregressive and linearly dependent on the
+GMST, denoted $`\boldsymbol{T} = (T_1, \ldots, T_t, \ldots, T_n)^T`$
+(subscript $`t`$ refers to time in years CE).
+
+The model’s **data level**:
+
+``` math
+P_t = \phi_P P_{t-1} + \alpha_0 + \alpha_1 T_t + \sigma_P \epsilon_t,
+\qquad \epsilon_t \overset{\text{iid}}{\sim} N(0, 1)
+```
+
+where $`\phi_P`$ denotes the lag-1 autocorrelation of $`P`$, the
+$`\alpha`$’s are coefficients, and $`\sigma_P`$ controls the amplitude
+of the unit-variance noise term $`\epsilon`$.
+
+The **process level** models $`T_t`$ as autoregressive and linearly
+dependent on the climate forcings $`G_t`$ (greenhouse gas
+concentrations), $`V_t`$ (related to volcanic aerosol optical depth),
+and $`S_t`$ (solar irradiance), already transformed as described below
+(see
+[`transform_forcings()`](https://paleopresto.github.io/BayGMST_R/reference/transform_forcings.md)):
+
+``` math
+T_t = \phi_T T_{t-1} + \beta_0 + \beta_G G_t + \beta_V V_t + \beta_S S_t
+  + \sigma_T \eta_t,
+\qquad \eta_t \overset{\text{iid}}{\sim} N(0, 1)
+```
+
+where $`\phi_T`$ denotes the lag-1 autocorrelation of
+$`\boldsymbol{T}`$, the $`\beta`$’s are constant coefficients, and
+$`\sigma_T`$ governs the amplitude of $`\eta_t`$. Gaussian white noise
+for both $`\boldsymbol{\eta}`$ and $`\boldsymbol{\epsilon}`$ provides
+good results (Wang, 2020). Here $`|\phi_P|, |\phi_T| < 1`$ and
+$`\sigma_P, \sigma_T > 0`$.
+
+Missing (pre-instrumental) temperatures are treated as parameters and
+estimated jointly with the model parameters, so the posterior yields
+both the reconstruction and its uncertainty.
+
+## Mapping to the code
+
+| Notation | Stan parameter | R argument / role |
+|----|----|----|
+| $`T_t`$ | `y` (transformed parameter) | `instrumental_T` (observed part), `y_mis` (reconstructed part) |
+| $`P_t`$ | `z` (data) | `proxy`, see [`reduce_proxies()`](https://paleopresto.github.io/BayGMST_R/reference/reduce_proxies.md) / [`as_baygmst_proxy()`](https://paleopresto.github.io/BayGMST_R/reference/as_baygmst_proxy.md) |
+| $`\phi_P`$ | `phi_R` |  |
+| $`\sigma_P`$ | `sigma_z` |  |
+| $`\alpha_0, \alpha_1`$ | `alpha0`, `alpha1` |  |
+| $`\phi_T`$ | `phi_T` |  |
+| $`\sigma_T`$ | `sigma_y` |  |
+| $`\beta_0, \beta_G, \beta_V, \beta_S`$ | `beta0`, `betaG`, `betaV`, `betaS` |  |
+| $`G_t, V_t, S_t`$ | `G`, `V`, `S` (data) | `forcing_G`, `forcing_V`, `forcing_S` |
+
+Note on naming: the Stan code calls the proxy-equation parameters
+`phi_R` and `sigma_z` (“R” for “reduced proxy”, matching this
+implementation’s single-series design); this vignette writes them
+$`\phi_P`$ and $`\sigma_P`$ for readability. They are the same
+quantities.
+
+## Priors
+
+As specified in the Stan model’s `model` block (weakly informative):
+
+``` math
+\begin{aligned}
+\alpha_0, \alpha_1, \beta_0, \beta_G, \beta_V, \beta_S &\sim N(0, 0.5) \\
+\phi_P, \phi_T &\sim N(0, 0.3) \\
+\sigma_P, \sigma_T &\sim \text{Exponential}(1)
+\end{aligned}
+```
+
+Because the data level estimates its own intercept $`\alpha_0`$ and
+slope $`\alpha_1`$, the proxy series does not need to be pre-calibrated
+to temperature units; these priors do, however, assume $`P_t`$ is on
+roughly unit scale (a standardized composite or a
+temperature-anomaly-scale series). See
+[`as_baygmst_proxy()`](https://paleopresto.github.io/BayGMST_R/reference/as_baygmst_proxy.md).
+
+## Forcing data
+
+Per Barboza et al. (2019, section 2.3), the three external forcings used
+in this family of models are:
+
+- **Volcanic forcing** ($`V_t`$): zonal-mean stratospheric aerosol
+  optical depth at 550 nm from the eVolv2k dataset (Toohey and Sigl,
+  2017), covering 500 BCE to 1900 CE, area-weighted and averaged to a
+  global annual estimate.
+- **Solar forcing** ($`S_t`$): total solar irradiance from the SATIRE-H
+  reconstruction (Vieira et al., 2011), decadal before 1940 CE and daily
+  thereafter, interpolated to annual resolution.
+- **Greenhouse-gas forcing** ($`G_t`$): hemispheric-mean atmospheric CO2
+  mole fraction (ppm) at annual resolution (Meinshausen et al., 2017),
+  extended further back using ice-core-based compilations such as the
+  PMIP4-CMIP6 `past1000` forcing set (Jungclaus et al., 2017).
+
+All these series measure perturbation to the top of the atmosphere
+energy budget, and are thus expressed in $`\mathrm{W\,m^{-2}}`$,
+following the climate science convention. To effect the conversion from
+the original units (aerosol optical depth for $`V_t`$; mole fraction for
+$`G_t`$),
+[`transform_forcings()`](https://paleopresto.github.io/BayGMST_R/reference/transform_forcings.md)
+implements
+
+``` math
+G'_t = \texttt{co2\_coef} \times \log(G_t / \texttt{co2\_c0}),
+\qquad
+V'_t = -\lvert\texttt{vol\_coef}\rvert \,(1 - e^{-V_t}),
+```
+
+where `co2_coef = 5.35` is the simplified CO2 radiative forcing
+coefficient of Myhre et al. (1998), adopted throughout the IPCC
+assessment reports; `co2_c0 = 280` ppm is the standard pre-industrial
+atmospheric CO2 reference concentration; and `vol_coef = 25` is the
+stratospheric aerosol optical depth-to-forcing scaling factor (in
+$`\mathrm{W\,m^{-2}}`$ per unit optical depth) used in IPCC AR5, traced
+to the GISS ModelE lineage of Hansen et al. (2005). Solar irradiance is
+simply centered on its own mean, $`S'_t = S_t - \bar{S}`$. These
+physically motivated formulations are a slight departure from the
+transformations used by Barboza et al. (2014, 2019).
+
+## Modeling assumptions worth knowing
+
+- **The instrumental period is treated as error-free.** In
+  `baygmst.stan`, the latent temperature state is set exactly equal to
+  the raw instrumental values for observed years; there is no separate
+  instrumental measurement-noise parameter. Keep this in mind when
+  interpreting instrumental-period fit statistics from
+  [`summary()`](https://rdrr.io/r/base/summary.html) on a fitted model.
+- **Cross-validation metrics are fully Bayesian.**
+  [`cv_baygmst()`](https://paleopresto.github.io/BayGMST_R/reference/cv_baygmst.md)
+  reports the posterior mean of the Stan-computed `r2_cv`/`mse_cv`
+  generated quantities, which is close to, but not identical to, a
+  plug-in point-estimate $`R^2`$ computed from the posterior-mean
+  reconstruction.
+- **Compositing uncertainty is not yet propagated.** When the proxy
+  input comes from an ensemble (e.g. a composite ensemble supplied via
+  [`as_baygmst_proxy()`](https://paleopresto.github.io/BayGMST_R/reference/as_baygmst_proxy.md)),
+  the ensemble is collapsed to a single series before fitting in this
+  release.
+
+## References
+
+- Barboza, L., B. Li, M. P. Tingley, and F. G. Viens (2014),
+  Reconstructing past temperatures from natural proxies and estimated
+  climate forcings using short- and long-memory models, *The Annals of
+  Applied Statistics*, 8(4), 1966-2001, <doi:10.1214/14-AOAS785>.
+- Barboza, L. A., J. Emile-Geay, B. Li, and W. He (2019), Efficient
+  reconstructions of common era climate via integrated nested Laplace
+  approximations, *Journal of Agricultural, Biological, and
+  Environmental Statistics*, 24(3), 535-554,
+  <doi:10.1007/s13253-019-00372-4>.
+- Hansen, J., et al. (2005), Efficacy of climate forcings, *J. Geophys.
+  Res. (Atm)*, 110(D9), 18104+, <doi:10.1029/2005JD005776>.
+- Jungclaus, J. H., et al. (2017), The PMIP4 contribution to CMIP6, Part
+  3: The last millennium, scientific objective, and experimental design
+  for the PMIP4 past1000 simulations, *Geoscientific Model Development*,
+  10(11), 4005-4033, <doi:10.5194/gmd-10-4005-2017>.
+- Mann, M. E., R. S. Bradley, and M. K. Hughes (1999), Northern
+  hemisphere temperatures during the past millennium: Inferences,
+  uncertainties, and limitations, *Geophysical Research Letters*, 26(6),
+  759-762, <doi:10.1029/1999GL900070>.
+- Meinshausen, M., et al. (2017), Historical greenhouse gas
+  concentrations for climate modelling (CMIP6), *Geoscientific Model
+  Development*, 10(5), 2057-2116, <doi:10.5194/gmd-10-2057-2017>.
+- Moberg, A., D. M. Sonechkin, K. Holmgren, N. M. Datsenko, and W.
+  Karlén (2005), Highly variable Northern Hemisphere temperatures
+  reconstructed from low- and high-resolution proxy data, *Nature*,
+  433(7026), 613-617, <doi:10.1038/nature03265>.
+- Myhre, G., E. J. Highwood, K. P. Shine, and F. Stordal (1998), New
+  estimates of radiative forcing due to well mixed greenhouse gases,
+  *Geophysical Research Letters*, 25(14), 2715-2718,
+  <doi:10.1029/98GL01908>.
+- Smerdon, J. E., and H. N. Pollack (2016), Reconstructing earth’s
+  surface temperature over the past 2000 years: the science behind the
+  headlines, *WIREs Climate Change*, 7(5), 746-771,
+  <doi:10.1002/wcc.418>.
+- Smerdon, J. E., E. R. Cook, and N. J. Steiger (2023), The historical
+  development of large-scale paleoclimate field reconstructions over the
+  common era, *Reviews of Geophysics*, 61(4), e2022RG000782,
+  <doi:10.1029/2022RG000782>.
+- Tingley, M. P., P. F. Craigmile, M. Haran, B. Li, E. Mannshardt,
+  and B. Rajaratnam (2012), Piecing together the past: statistical
+  insights into paleoclimatic reconstructions, *Quaternary Science
+  Reviews*, 35, 1-22, <doi:10.1016/j.quascirev.2012.01.012>.
+- Toohey, M., and M. Sigl (2017), Volcanic stratospheric sulfur
+  injections and aerosol optical depth from 500 BCE to 1900 CE, *Earth
+  System Science Data*, 9(2), 809-831, <doi:10.5194/essd-9-809-2017>.
+- Vieira, L. E. A., S. K. Solanki, N. A. Krivova, and I. Usoskin (2011),
+  Evolution of the solar irradiance during the Holocene, *Astron. &
+  Astrophys.*, 531, A6, <doi:10.1051/0004-6361/201015843>.
+- Wang, H. (2020), Wiener-chaos analysis on Bayesian models with
+  applications in agriculture and climatology, Ph.D. dissertation,
+  Michigan State University, East Lansing, MI, <doi:10.25335/vb7s-rh49>.
