@@ -16,8 +16,11 @@ real R tooling; see that file).
 
 ## Installation
 
-BayGMST depends on [cmdstanr](https://mc-stan.org/cmdstanr/), which is
-not on CRAN and must be installed from Stan’s own R-universe repository:
+Fitting models requires [cmdstanr](https://mc-stan.org/cmdstanr/), which
+is not on CRAN, and a CmdStan installation. Install both **before**
+BayGMST: BayGMST compiles its Stan models when it is installed, and
+skips that step if they are missing (proxy reduction and forcing
+transforms still work). If you add them later, reinstall BayGMST.
 
 ``` r
 
@@ -28,13 +31,12 @@ install.packages(
 cmdstanr::install_cmdstan()
 ```
 
-Then install BayGMST itself (once published; for now, from source on
-this branch):
+Then install BayGMST itself:
 
 ``` r
 
-# install.packages("remotes")
-remotes::install_local(".", dependencies = TRUE, build_vignettes = TRUE)
+install.packages("BayGMST")                      # once on CRAN
+# remotes::install_github("paleopresto/BayGMST_R") # development version
 ```
 
 ## Usage

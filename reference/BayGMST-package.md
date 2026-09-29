@@ -18,11 +18,14 @@ and
 [`cv_baygmst()`](https://paleopresto.github.io/BayGMST_R/reference/cv_baygmst.md)
 compile and sample a 'Stan' model via the instantiate and cmdstanr
 packages, which in turn require a working CmdStan installation on the
-user's machine. Use
+user's machine. cmdstanr is not on CRAN; install it from
+<https://stan-dev.r-universe.dev>, then run
+[`cmdstanr::install_cmdstan()`](https://mc-stan.org/cmdstanr/reference/install_cmdstan.html).
+BayGMST compiles its Stan models when it is installed, and only if
+cmdstanr and CmdStan are available at that moment, so install them
+first, or reinstall BayGMST after adding them. Use
 [`instantiate::stan_cmdstan_exists()`](https://wlandau.github.io/instantiate/reference/stan_cmdstan_exists.html)
-to check whether one is available, and see
-[`vignette("cmdstanr", package = "cmdstanr")`](https://mc-stan.org/cmdstanr/articles/cmdstanr.html)
-for setup instructions.
+to check whether CmdStan is available.
 [`reduce_proxies()`](https://paleopresto.github.io/BayGMST_R/reference/reduce_proxies.md)
 and
 [`transform_forcings()`](https://paleopresto.github.io/BayGMST_R/reference/transform_forcings.md)
@@ -39,6 +42,8 @@ unmodified scripts.
 ## See also
 
 Useful links:
+
+- <https://paleopresto.github.io/BayGMST_R/>
 
 - <https://github.com/paleopresto/BayGMST_R>
 

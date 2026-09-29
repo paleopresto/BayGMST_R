@@ -138,27 +138,27 @@ fit <- fit_baygmst(
 #> Chain 2 Iteration:  400 / 1300 [ 30%]  (Sampling) 
 #> Chain 1 Iteration:  600 / 1300 [ 46%]  (Sampling) 
 #> Chain 2 Iteration:  500 / 1300 [ 38%]  (Sampling) 
-#> Chain 1 Iteration:  700 / 1300 [ 53%]  (Sampling) 
 #> Chain 2 Iteration:  600 / 1300 [ 46%]  (Sampling) 
-#> Chain 1 Iteration:  800 / 1300 [ 61%]  (Sampling) 
+#> Chain 1 Iteration:  700 / 1300 [ 53%]  (Sampling) 
 #> Chain 2 Iteration:  700 / 1300 [ 53%]  (Sampling) 
-#> Chain 1 Iteration:  900 / 1300 [ 69%]  (Sampling) 
+#> Chain 1 Iteration:  800 / 1300 [ 61%]  (Sampling) 
 #> Chain 2 Iteration:  800 / 1300 [ 61%]  (Sampling) 
-#> Chain 1 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
+#> Chain 1 Iteration:  900 / 1300 [ 69%]  (Sampling) 
 #> Chain 2 Iteration:  900 / 1300 [ 69%]  (Sampling) 
+#> Chain 1 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
 #> Chain 2 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
 #> Chain 1 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
 #> Chain 2 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
 #> Chain 1 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
 #> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
 #> Chain 1 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 1 finished in 2.9 seconds.
 #> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 2 finished in 3.0 seconds.
+#> Chain 1 finished in 2.9 seconds.
+#> Chain 2 finished in 2.9 seconds.
 #> 
 #> Both chains finished successfully.
 #> Mean chain execution time: 2.9 seconds.
-#> Total execution time: 3.2 seconds.
+#> Total execution time: 3.0 seconds.
 summary(fit)
 #> Posterior parameter summary:
 #>    variable         mean       median          sd         mad          q5
@@ -249,20 +249,20 @@ cv <- cv_baygmst(
 #> Chain 1 Iteration:    1 / 1300 [  0%]  (Warmup) 
 #> Chain 2 Iteration:    1 / 1300 [  0%]  (Warmup)
 #> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/RtmpgnMXI8/model-1cce6fcbbc88.stan', line 75, column 2 to column 40)
+#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/Rtmp53IqqQ/model-1caf7952876a.stan', line 75, column 2 to column 40)
 #> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 2
 #> Chain 1 Iteration:  100 / 1300 [  7%]  (Warmup) 
 #> Chain 2 Iteration:  100 / 1300 [  7%]  (Warmup) 
-#> Chain 1 Iteration:  200 / 1300 [ 15%]  (Warmup) 
 #> Chain 2 Iteration:  200 / 1300 [ 15%]  (Warmup) 
+#> Chain 1 Iteration:  200 / 1300 [ 15%]  (Warmup) 
 #> Chain 1 Iteration:  300 / 1300 [ 23%]  (Warmup) 
 #> Chain 1 Iteration:  301 / 1300 [ 23%]  (Sampling) 
 #> Chain 2 Iteration:  300 / 1300 [ 23%]  (Warmup) 
 #> Chain 2 Iteration:  301 / 1300 [ 23%]  (Sampling) 
-#> Chain 1 Iteration:  400 / 1300 [ 30%]  (Sampling) 
 #> Chain 2 Iteration:  400 / 1300 [ 30%]  (Sampling) 
+#> Chain 1 Iteration:  400 / 1300 [ 30%]  (Sampling) 
 #> Chain 2 Iteration:  500 / 1300 [ 38%]  (Sampling) 
 #> Chain 1 Iteration:  500 / 1300 [ 38%]  (Sampling) 
 #> Chain 2 Iteration:  600 / 1300 [ 46%]  (Sampling) 
@@ -279,13 +279,13 @@ cv <- cv_baygmst(
 #> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
 #> Chain 1 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
 #> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 2 finished in 3.8 seconds.
+#> Chain 2 finished in 3.7 seconds.
 #> Chain 1 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
 #> Chain 1 Iteration: 1300 / 1300 [100%]  (Sampling) 
 #> Chain 1 finished in 4.2 seconds.
 #> 
 #> Both chains finished successfully.
-#> Mean chain execution time: 4.0 seconds.
+#> Mean chain execution time: 3.9 seconds.
 #> Total execution time: 4.2 seconds.
 #> 
 #> Running MCMC with 2 parallel chains...
@@ -293,7 +293,7 @@ cv <- cv_baygmst(
 #> Chain 1 Iteration:    1 / 1300 [  0%]  (Warmup) 
 #> Chain 2 Iteration:    1 / 1300 [  0%]  (Warmup)
 #> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/RtmpgnMXI8/model-1cce6fcbbc88.stan', line 75, column 2 to column 40)
+#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/Rtmp53IqqQ/model-1caf7952876a.stan', line 75, column 2 to column 40)
 #> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 2
@@ -307,15 +307,15 @@ cv <- cv_baygmst(
 #> Chain 2 Iteration:  600 / 1300 [ 46%]  (Sampling) 
 #> Chain 2 Iteration:  700 / 1300 [ 53%]  (Sampling) 
 #> Chain 2 Iteration:  800 / 1300 [ 61%]  (Sampling) 
-#> Chain 2 Iteration:  900 / 1300 [ 69%]  (Sampling) 
 #> Chain 1 Iteration:  200 / 1300 [ 15%]  (Warmup) 
+#> Chain 2 Iteration:  900 / 1300 [ 69%]  (Sampling) 
 #> Chain 2 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
 #> Chain 2 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
 #> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
-#> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 2 finished in 1.9 seconds.
 #> Chain 1 Iteration:  300 / 1300 [ 23%]  (Warmup) 
 #> Chain 1 Iteration:  301 / 1300 [ 23%]  (Sampling) 
+#> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
+#> Chain 2 finished in 2.0 seconds.
 #> Chain 1 Iteration:  400 / 1300 [ 30%]  (Sampling) 
 #> Chain 1 Iteration:  500 / 1300 [ 38%]  (Sampling) 
 #> Chain 1 Iteration:  600 / 1300 [ 46%]  (Sampling) 
@@ -337,7 +337,7 @@ cv <- cv_baygmst(
 #> Chain 1 Iteration:    1 / 1300 [  0%]  (Warmup) 
 #> Chain 2 Iteration:    1 / 1300 [  0%]  (Warmup)
 #> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/RtmpgnMXI8/model-1cce6fcbbc88.stan', line 75, column 2 to column 40)
+#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/Rtmp53IqqQ/model-1caf7952876a.stan', line 75, column 2 to column 40)
 #> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 2
