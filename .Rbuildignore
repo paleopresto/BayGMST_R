@@ -2,7 +2,6 @@
 ^baygmst\.Rproj$
 ^\.vscode$
 ^\.DS_Store$
-^reference-manual$
 ^CRAN-READINESS\.md$
 ^\.github$
 ^README\.Rmd$

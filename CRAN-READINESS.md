@@ -1,126 +1,51 @@
 # CRAN readiness checklist
 
-**Status update (2026-08-25):** steps 1-4 below have now been executed for
-real on macOS ARM64 with R 4.5.2 and CmdStan 2.39.0. `roxygen2` regenerated
-`NAMESPACE`/`man/` (the hand-authored versions matched, aside from the new
-`as_baygmst_proxy()` interface added in the same session);
-`instantiate::stan_package_configure()` generated the five scaffold files;
-and `R CMD check --as-cran` on the built tarball passes with no ERRORs --
-all tests, examples (including `--run-donttest`), and the vignette
-(including actual sampling) succeed. The remaining WARNINGs/NOTEs are
-documented in `cran-comments.md` and are inherent to the 'instantiate'
-packaging pattern (cmdstanr via Additional_repositories; `-Wno-*` flags
-from the generated Makevars) or local tooling (old HTML Tidy,
-missing `checkbashisms`). Still open before submission: step 5's judgment
-items and step 7.
+**Status (2026-09-29):** the package passes `R CMD check --as-cran` locally
+(macOS ARM64, R 4.5.2, CmdStan 2.39.0) with no ERRORs; all tests,
+examples (including `--run-donttest`), and vignettes (including real
+sampling) succeed. The remaining WARNINGs/NOTEs are documented in
+`cran-comments.md`. Tyler Bagwell has confirmed the package reproduces the
+results of the original scripts.
 
-This package was restructured on the `CRAN` branch in a sandbox with **no R
-installation available** -- every `.R`/`.stan`/`DESCRIPTION` file was
-hand-authored and statically cross-checked (grep, not `R CMD check`), but
-nothing had been run before the 2026-08-25 verification pass described
-above.
+## Resolved by the authors (August 2026)
 
-## 1. Regenerate documentation for real
+All six open items from the draft reference manual were reviewed by Tyler
+Bagwell, Frederi Viens, and Julien Emile-Geay; the decisions are recorded in
+`NEWS.md` under "Modeling decisions and known limitations":
 
-`NAMESPACE` and every file under `man/` are hand-written placeholders that
-mirror what `roxygen2` *should* produce from the `@export`/`@param`/etc. tags
-in `R/`, but they were never actually run through roxygen2.
+1. `y[NT_mis]`/`z[NT_mis]` indexing shorthand: kept as is.
+2. Error-free instrumental temperature: kept, documented in the model vignette.
+3. Fully Bayesian cross-validation R^2: kept.
+4. `SIR` unvalidated, warns on use: kept.
+5. `vol_coef = 25` attributed to Hansen et al. (2005): kept.
+6. `DESCRIPTION` wording: replaced with the text Tyler and Frederi supplied.
 
-```r
-install.packages(c("devtools", "roxygen2"))
-devtools::document()
-```
+Also resolved: `plot(fit)` now draws the combined reconstruction +
+posterior-density figure used in the PReSto manuscript, and the
+hand-typeset draft reference manual was retired (its model section lives in
+`vignette("baygmst-model")`; R builds the real manual from `man/`).
 
-Then diff what changed. If `devtools::document()` produces something
-different from what's already in `man/`/`NAMESPACE`, **trust the generated
-output** -- it's authoritative; the hand-authored versions were only ever a
-best-effort approximation.
+## Remaining before submission
 
-## 2. Set up the Stan build scaffolding
+- [ ] **Make `paleopresto/BayGMST_R` public.** The `URL`/`BugReports`
+  fields 404 while it is private, which fails CRAN's URL check. Going
+  public also triggers the pkgdown deploy (`.github/workflows/pkgdown.yaml`).
+- [ ] Merge the `CRAN` branch into `main` (or decide which branch is
+  canonical) so the public repo matches the submitted package.
+- [ ] Run `devtools::spell_check()`, then the remote checks
+  `devtools::check_win_devel()` and `rhub::rhub_check()`. Win-builder emails
+  the maintainer (Tyler), so coordinate with him.
+- [ ] Re-run `R CMD check --as-cran` with the remote incoming checks on
+  (after the repo is public) and update `cran-comments.md` with the
+  win-builder/R-hub environments.
+- [ ] Tyler, as maintainer, submits via <https://cran.r-project.org/submit.html>
+  and confirms the email CRAN sends to <teb6@rice.edu>.
 
-Stan model files live in `src/stan/baygmst.stan` and
-`src/stan/baygmst_cv.stan`, following the
-[instantiate](https://wlandau.github.io/instantiate/) package's packaging
-pattern. The five scaffold files instantiate needs
-(`cleanup`, `cleanup.win`, `src/Makevars`, `src/Makevars.win`,
-`src/install.libs.R`) were **deliberately not hand-written** -- they carry
-exact, license-attributed shell/Makevars syntax that's easy to get subtly
-wrong without being able to test it. Generate them for real:
+## Notes for working on the package
 
-```r
-install.packages("instantiate")
-instantiate::stan_package_configure()
-```
-
-Run this from the package root, then inspect what it wrote before
-committing it.
-
-## 3. Install and smoke-test
-
-```r
-install.packages(
-  "cmdstanr",
-  repos = c("https://stan-dev.r-universe.dev", getOption("repos"))
-)
-cmdstanr::install_cmdstan()
-
-devtools::install(build_vignettes = TRUE)
-library(BayGMST)
-instantiate::stan_cmdstan_exists() # should be TRUE now
-```
-
-**Do not use `devtools::load_all()` or `devtools::test()`** -- instantiate's
-own documentation states `pkgload::load_all()` is incompatible with it. Use
-real installs (`devtools::install()` / `R CMD INSTALL`) plus `R CMD check`'s
-own test run instead.
-
-## 4. Build and check
-
-```sh
-R CMD build .
-R CMD check --as-cran BayGMST_0.1.0.tar.gz
-```
-
-Every example/test/vignette chunk that actually samples a model is already
-guarded with `instantiate::stan_cmdstan_exists()`, so `R CMD check` should
-not hard-fail in an environment without CmdStan (e.g. CRAN's own check
-machines) -- but this has not been verified by actually running it.
-
-## 5. Fill in placeholders that need your judgment, not mine
-
-- **`DESCRIPTION` `Description:` field** -- drafted from the README and this
-  package's own code. Read it and edit the wording to your satisfaction;
-  it's public CRAN-facing text.
-- **`RoxygenNote` in `DESCRIPTION`** -- set to a guessed placeholder
-  (`7.3.2`); `devtools::document()` (step 1) will set the real value
-  automatically.
-- **`Authors@R` / `Maintainer`** -- currently Tyler Bagwell (`cre`) and
-  Julien Emile-Geay (`aut`), per this session's discussion. Add/remove
-  contributors as appropriate.
-- **`URL`/`BugReports`** -- currently point at
-  `github.com/julieneg/BayGMST_R`; update if the package moves to a
-  different repository (e.g. under Tyler's own account) before submission.
-
-## 6. Known unresolved issues (see `NEWS.md` for full detail)
-
-- **Possible bug, left unchanged:** `src/stan/baygmst.stan`'s
-  `y_ins_fitted` block indexes the proxy vector with `z[NT_mis]` (a *count*)
-  at `t == 1`, where `z[idx_mis[NT_mis]]` looks more likely correct. Flagged
-  by the original author, never resolved, not silently changed here --
-  needs your statistical sign-off either way.
-- **`reduce_proxies(method = "SIR")`** is experimental/unvalidated; see its
-  documentation (`?reduce_proxies`) before using it for anything real.
-- **`data/HadCRUT.5.1.0.0.analysis.anomalies.ensemble_mean.nc`** (31 MB, in
-  the repo root) isn't read by any packaged function and is excluded from
-  the built package via `.Rbuildignore`. Decide whether to keep it in the
-  repo at all, or drop it (e.g. with `git lfs` or a data-download script if
-  it's needed for some other purpose not captured in this restructuring).
-
-## 7. Only after all of the above
-
-- `devtools::build_manual()` (or `R CMD Rd2pdf .`) to produce the real,
-  authoritative reference manual PDF, superseding
-  `reference-manual/BayGMST-reference-manual.tex` (a hand-typeset preview
-  built without access to R -- see the banner at the top of that document).
-- `devtools::spell_check()`, `devtools::check_win_devel()` /
-  `rhub::rhub_check()` before an actual CRAN submission.
+- Do not use `devtools::load_all()` or `devtools::test()`; `instantiate`
+  is incompatible with `pkgload::load_all()`. Install for real
+  (`R CMD INSTALL .`) and use `R CMD check`'s own test run.
+- Every example, test, and vignette chunk that samples a Stan model is
+  guarded with `instantiate::stan_cmdstan_exists()`, so the package checks
+  cleanly on machines without CmdStan.

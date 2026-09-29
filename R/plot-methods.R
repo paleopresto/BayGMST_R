@@ -135,3 +135,125 @@ plot_cv <- function(cv) {
     ) +
     ggplot2::theme_light(base_size = 10)
 }
+
+#' Plot a fitted BayGMST model as a single summary figure
+#'
+#' Reproduces the combined figure of the original \code{BayGMST_v1.0.R}
+#' script (and the PReSto manuscript): the reconstruction from
+#' [plot_reconstruction()] on top, and below it three posterior-density
+#' panels grouping the proxy coefficient (`alpha1`), the forcing
+#' sensitivities (`betaG`, `betaV`, `betaS`), and the autoregressive
+#' coefficients (`phi_R`, `phi_T`). The individual pieces remain available
+#' through [plot_reconstruction()] and [plot_posterior_densities()].
+#'
+#' Requires the 'patchwork' package.
+#'
+#' @param x A `"baygmst_fit"` object, as returned by [fit_baygmst()].
+#' @param title Figure title. Default
+#'   `"GMST Reconstruction using a Reduced Proxy"`.
+#' @param subtitle Figure subtitle. By default, states the instrumental
+#'   period and the AR(1) model structure; pass `NULL` to omit it.
+#' @param ... Unused; for compatibility with the [plot()] generic.
+#'
+#' @return A 'patchwork' object (which is also a `ggplot`); save it with
+#'   [ggplot2::ggsave()] if a file is wanted.
+#' @seealso [plot_reconstruction()], [plot_posterior_densities()],
+#'   [plot_trace()]
+#' @export
+plot.baygmst_fit <- function(x,
+                             title = "GMST Reconstruction using a Reduced Proxy",
+                             subtitle = NULL,
+                             ...) {
+  stopifnot(inherits(x, "baygmst_fit"))
+  if (!requireNamespace("patchwork", quietly = TRUE)) {
+    stop("plot() on a baygmst_fit requires the 'patchwork' package. ",
+         "Install it, or use plot_reconstruction() and ",
+         "plot_posterior_densities() separately.", call. = FALSE)
+  }
+  if (missing(subtitle)) {
+    obs_years <- range(x$years[x$idx_obs])
+    subtitle <- sprintf("Instrumental period: (%s, %s);  AR(1) in T and R equations",
+                        obs_years[1], obs_years[2])
+  }
+
+  groups <- list(
+    alpha = "alpha1",
+    beta  = c("betaG", "betaV", "betaS"),
+    phi   = c("phi_R", "phi_T")
+  )
+  draws_df <- as.data.frame(
+    x$fit$draws(variables = unlist(groups, use.names = FALSE), format = "df")
+  )
+  df_hist <- tidyr::pivot_longer(
+    draws_df[, unlist(groups, use.names = FALSE), drop = FALSE],
+    cols = dplyr::everything(),
+    names_to = "parameter", values_to = "value"
+  )
+
+  p_ts <- plot_reconstruction(x, title = NULL)
+  p_alpha <- posterior_density_panel(
+    df_hist, groups$alpha,
+    xlab = expression("Signed RP-T Coefficient (" * degree * C^{-1} * ")"),
+    ylab = "Post. Density"
+  )
+  p_beta <- posterior_density_panel(
+    df_hist, groups$beta,
+    xlab = expression("Forcing Sensitivity (" * degree * C ~ m^2 ~ W^{-1} * ")")
+  )
+  p_phi <- posterior_density_panel(
+    df_hist, groups$phi,
+    xlab = expression("Autoregressive Components" * phantom(""^{-1})),
+    xlim = c(-0.1, 1)
+  )
+
+  p_hist <- patchwork::wrap_plots(p_alpha, p_beta, p_phi, nrow = 1)
+  patchwork::wrap_plots(p_ts, p_hist, ncol = 1, heights = c(5, 1)) +
+    patchwork::plot_annotation(title = title, subtitle = subtitle) &
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 14),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 9)
+    )
+}
+
+# One posterior-density panel of plot.baygmst_fit(), styled as in the
+# original BayGMST_v1.0.R script (colors, linetypes, plotmath labels).
+posterior_density_panel <- function(df_hist, parameters, xlab, ylab = "",
+                                    xlim = NULL) {
+  cols <- c(alpha1 = "#5899E2", betaG = "#07D664", betaV = "#1CCAD8",
+            betaS = "#7B287D", phi_R = "#625834", phi_T = "#FA9500")
+  labs <- c(alpha1 = expression(alpha[T]), betaG = expression(beta[G]),
+            betaV = expression(beta[V]), betaS = expression(beta[S]),
+            phi_R = expression(phi[R]), phi_T = expression(phi[T]))
+  ltys <- c(alpha1 = "solid", betaG = "solid", betaV = "42", betaS = "11",
+            phi_R = "solid", phi_T = "42")
+
+  dat <- df_hist[df_hist$parameter %in% parameters, , drop = FALSE]
+  if (is.null(xlim)) xlim <- range(dat$value, na.rm = TRUE)
+
+  ggplot2::ggplot(
+    dat,
+    ggplot2::aes(x = .data$value, fill = .data$parameter,
+                 color = .data$parameter, linetype = .data$parameter)
+  ) +
+    ggplot2::geom_density(linewidth = 0.65) +
+    ggplot2::geom_vline(xintercept = 0) +
+    ggplot2::geom_hline(yintercept = 0) +
+    ggplot2::scale_fill_manual(values = ggplot2::alpha(cols[parameters], 0.35),
+                               breaks = parameters, labels = labs[parameters]) +
+    ggplot2::scale_color_manual(values = cols[parameters],
+                                breaks = parameters, labels = labs[parameters]) +
+    ggplot2::scale_linetype_manual(values = ltys[parameters],
+                                   breaks = parameters, labels = labs[parameters]) +
+    ggplot2::coord_cartesian(xlim = xlim) +
+    ggplot2::labs(x = xlab, y = ylab, fill = NULL, color = NULL, linetype = NULL) +
+    ggplot2::theme_minimal(base_size = 10) +
+    ggplot2::theme(
+      legend.position = "inside",
+      legend.position.inside = c(0.98, 0.98),
+      legend.justification = c(1, 1),
+      legend.background = ggplot2::element_blank(),
+      legend.key.size = ggplot2::unit(0.35, "lines"),
+      legend.text = ggplot2::element_text(size = 8),
+      panel.grid.minor = ggplot2::element_blank()
+    )
+}

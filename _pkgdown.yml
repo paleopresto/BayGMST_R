@@ -36,6 +36,7 @@ reference:
   - reconstruct
   - summary.baygmst_fit
   - print.baygmst_fit
+  - plot.baygmst_fit
   - plot_reconstruction
   - plot_trace
   - plot_posterior_densities

@@ -58,8 +58,8 @@ instrumental and pre-instrumental years, respectively.}
 \item{cmdstan_version}{The CmdStan version used, for provenance.}
 \item{call}{The matched call.}
 Use \code{\link[=reconstruct]{reconstruct()}} to extract a tidy reconstruction \code{data.frame},
-\code{\link[=plot_reconstruction]{plot_reconstruction()}} / \code{\link[=plot_trace]{plot_trace()}} / \code{\link[=plot_posterior_densities]{plot_posterior_densities()}}
-to visualize it, and \code{summary()} for posterior parameter summaries.
+\link[=plot.baygmst_fit]{plot()} or \code{\link[=plot_reconstruction]{plot_reconstruction()}} /
+\code{\link[=plot_trace]{plot_trace()}} / \code{\link[=plot_posterior_densities]{plot_posterior_densities()}} to visualize it, and \code{summary()} for posterior parameter summaries.
 }
 \description{
 Prepares the data list expected by the \code{baygmst} 'Stan' model and

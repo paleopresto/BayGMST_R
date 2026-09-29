@@ -50,7 +50,7 @@ fit <- fit_baygmst(
 )
 
 reconstruct(fit)
-plot_reconstruction(fit)
+plot(fit)   # reconstruction + posterior densities, as in the PReSto manuscript
 summary(fit)
 ```
 
@@ -77,7 +77,4 @@ Barboza et al. (2014, 2019) and Wang (2020); see
 description (equations, priors, forcing data provenance, and the mapping
 to the Stan code). For per-function documentation, see the package help
 (`?BayGMST`); `inst/legacy-scripts/` holds the original, pre-packaging
-scripts this was built from. The `reference-manual/` directory is a
-hand-typeset draft that predates the packaged documentation; its model
-section now lives in the `baygmst-model` vignette, and the authoritative
-reference manual is the one `R CMD Rd2pdf` builds from `man/`.
+scripts this was built from.

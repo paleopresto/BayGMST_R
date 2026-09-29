@@ -31,7 +31,7 @@ require CmdStan.
 
 This package was restructured from a collection of top-level analysis
 scripts; see \code{NEWS.md} for exactly what changed (fixed bugs, dropped
-dead code, unresolved issues flagged but left unchanged) and
+dead code, and modeling decisions reviewed by the authors) and
 \code{system.file("legacy-scripts", package = "BayGMST")} for the
 original, unmodified scripts.
 }

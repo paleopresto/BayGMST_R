@@ -120,6 +120,16 @@ summary(fit)
 
 ## 5. Visualize the reconstruction
 
+`plot()` on a fitted model draws the summary figure used in the PReSto
+manuscript: the reconstruction on top and the posterior densities of the
+model parameters below (this needs the 'patchwork' package).
+
+```{r plot-fit, eval = has_cmdstan && requireNamespace("patchwork", quietly = TRUE), fig.height = 6}
+plot(fit)
+```
+
+The panels are also available individually:
+
 ```{r plot-reconstruction, eval = has_cmdstan}
 plot_reconstruction(fit)
 ```
@@ -195,8 +205,7 @@ columns, and time-by-ensemble matrices work the same way -- see
 
 ## Known limitations
 
-See `NEWS.md` for the full list. Most notably: `src/stan/baygmst.stan`
-contains one unresolved indexing question the original author flagged and
-never fully validated (`// CHECK THIS LINE`), carried forward unchanged
-pending statistical review -- reconstructions from this vignette's toy data
-should not be over-interpreted.
+See `NEWS.md` for the modeling decisions and known limitations of this
+release (for example, `reduce_proxies(method = "SIR")` is experimental).
+The data in this vignette are synthetic, so its reconstructions should not
+be over-interpreted.

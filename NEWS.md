@@ -25,6 +25,10 @@ unchanged, under `inst/legacy-scripts/` for provenance.
   side effect.
 * `print.baygmst_fit()`, `summary.baygmst_fit()`, `print.baygmst_cv()` S3
   methods.
+* `plot.baygmst_fit()`: `plot(fit)` reproduces the combined figure of the
+  original script and the PReSto manuscript (reconstruction on top; grouped
+  posterior densities of `alpha1`, the forcing sensitivities, and the AR(1)
+  coefficients below). Requires 'patchwork' (Suggests).
 * `as_baygmst_proxy()` -- normalizes the shapes a reduced/composited proxy
   series can arrive in (the output of `reduce_proxies()`, a `data.frame`, a
   bare vector, a time-by-ensemble matrix, or a composite object from
@@ -68,38 +72,39 @@ unchanged, under `inst/legacy-scripts/` for provenance.
   decide whether and where to save outputs, per CRAN policy on functions
   writing to the filesystem.
 
-## Known limitations (flagged for Tyler/Julien, not silently resolved)
+## Modeling decisions and known limitations
 
-* **Fragile-but-correct indexing, flagged and clarified, not changed:** in
-  `src/stan/baygmst.stan` (originally `BayGMST_v1.0.stan`), the
-  observed-period fitted-value block uses `y[NT_mis]` and `z[NT_mis]` as
-  indices into those vectors at `t == 1`. `NT_mis` is a *count*, not a time
-  index, and the original author flagged this with `// CHECK THIS LINE`. On
-  closer inspection (this session, after initially mischaracterizing it as a
-  likely bug): given how this pipeline actually constructs its inputs --
-  missing (pre-instrumental) years always occupy positions `1:NT_mis` and
-  observed years always occupy the remaining positions, with no interleaving
-  -- `y[NT_mis]`/`z[NT_mis]` are numerically equivalent to the presumably
-  intended `y[idx_mis[NT_mis]]`/`z[idx_mis[NT_mis]]`, so this is *not* a live
-  bug under normal use. It is undocumented, fragile shorthand, though: it
-  would silently compute the wrong value if the missing/observed years were
-  ever non-contiguous (e.g. an internal gap in the instrumental record), and
-  its effect is narrowly scoped to `y_ins_fitted[1]` alone (a
-  posterior-predictive diagnostic value for the single earliest instrumental
-  year) -- it does not touch the parameter posteriors or `y_mis`, the
-  pre-instrumental reconstruction that is the model's actual scientific
-  output. See the reference manual's Statistical Model section for the exact
-  equations this sits inside.
-* `reduce_proxies(method = "SIR")` mirrors the original script's SIR branch,
-  which `config.yml` itself already documented as "still under construction."
-  It is *not* recommended for use until validated.
+The following were reviewed and signed off by the package authors before
+the first CRAN release:
+
+* **`y[NT_mis]`/`z[NT_mis]` indexing, kept as is.** In
+  `src/stan/baygmst.stan`, the observed-period fitted-value block uses the
+  count `NT_mis` as a vector index at `t == 1`. Because missing
+  (pre-instrumental) years always occupy positions `1:NT_mis`, this is
+  numerically equivalent to `y[idx_mis[NT_mis]]`/`z[idx_mis[NT_mis]]` and is
+  not a live bug. It would be wrong only if missing and observed years were
+  interleaved, and it affects only `y_ins_fitted[1]`, a posterior-predictive
+  diagnostic, not the parameter posteriors or the reconstruction `y_mis`.
+* **Instrumental temperature is treated as error-free**, as in the models of
+  Barboza et al. (2014) and Wang (2020). See `vignette("baygmst-model")`.
+* **Cross-validation R^2** is the fully Bayesian posterior mean of Stan's
+  `r2_cv`, rather than the plug-in estimate of the original `cv_v0.1.R`.
+  The two are close but not identical.
+* **`reduce_proxies(method = "SIR")` is experimental and unvalidated** and
+  warns on use. The original SIR implementation depended on legacy
+  libraries that are no longer available, so it could not be used as a
+  reference.
+* **Volcanic forcing coefficient.** `vol_coef = 25` (W m^-2 per unit AOD) is
+  attributed to Hansen et al. (2005); the value is corroborated via IPCC AR5.
 * Several packages `library()`-loaded by the original scripts (`car`, `fda`,
   `ggmap`, `maps`) had no evident corresponding usage in the code as written,
-  so they were not carried into `Imports`/`Suggests`. Re-add them if a hidden
-  use is found.
+  so they were not carried into `Imports`/`Suggests`.
 * `data/HadCRUT.5.1.0.0.analysis.anomalies.ensemble_mean.nc` (31 MB) was not
   read by any ported function and has been removed from the repository tree
   (it remains in git history), along with the compiled CmdStan binaries in
   `inst/legacy-scripts/` and the `outputs/` build artifacts. The legacy
   `config.yml` moved to `inst/legacy-scripts/config.yml`; no package
   function reads it.
+* The hand-typeset draft reference manual (`reference-manual/`) was retired.
+  Its model description lives in `vignette("baygmst-model")`, and the
+  reference manual is the one R builds from `man/`.

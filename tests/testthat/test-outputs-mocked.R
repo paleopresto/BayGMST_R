@@ -124,6 +124,15 @@ test_that("plot functions return ggplot objects", {
   expect_s3_class(plot_posterior_densities(fit), "ggplot")
 })
 
+test_that("plot() on a fit builds the combined summary figure", {
+  skip_if_not_installed("patchwork")
+  fit <- make_mock_fit()
+  p <- plot(fit)
+  expect_s3_class(p, "patchwork")
+  expect_match(p$patches$annotation$subtitle, "Instrumental period: \\(31, 50\\)")
+  expect_null(plot(fit, subtitle = NULL)$patches$annotation$subtitle)
+})
+
 test_that("plot_cv() and print.baygmst_cv work on a mocked cv object", {
   set.seed(7)
   folds <- data.frame(

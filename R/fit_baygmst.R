@@ -41,8 +41,8 @@
 #'   \item{cmdstan_version}{The CmdStan version used, for provenance.}
 #'   \item{call}{The matched call.}
 #'   Use [reconstruct()] to extract a tidy reconstruction `data.frame`,
-#'   [plot_reconstruction()] / [plot_trace()] / [plot_posterior_densities()]
-#'   to visualize it, and \code{summary()} for posterior parameter summaries.
+#'   [plot()][plot.baygmst_fit] or [plot_reconstruction()] /
+#'   [plot_trace()] / [plot_posterior_densities()] to visualize it, and \code{summary()} for posterior parameter summaries.
 #'
 #' @section CmdStan required:
 #' This function requires a working CmdStan installation (via \pkg{cmdstanr}
