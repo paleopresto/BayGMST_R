@@ -1,30 +1,11 @@
-# BayGMST (development version)
-
-## Bug fixes
-
-* `reduce_proxies()` now applies its `max_na_frac` missingness screen before
-  zero-filling gaps, as Barboza et al.'s original script did. Since 0.1.0 it
-  zero-filled every gap after a record's first value first, so the screen saw
-  only leading NAs and kept almost every record: decadal records on an annual
-  grid, and records ending before the calibration window, entered the
-  regression mostly as zeros. On large proxy pools the resulting reduced proxy
-  stopped `fit_baygmst()` from converging (chains split on `phi_T`, rhat up to
-  2.4). The 0.1.0 behaviour came from a later edit to
-  `utils/PAGES2k_reducedProxy_UNSC.R`; `PAGES2k_reducedProxy_UNSC_OLD.R`
-  has the original order.
-
-## New
-
-* `reduce_proxies()` output gains a `proxies` element listing the records each
-  segment used, and its print method shows the count per segment.
-
 # BayGMST 0.1.0
 
 Initial packaging of the BayGMST model. Previously this repository was a
 collection of top-level analysis scripts (`R_scripts/`, `utils/`) driven by
 `config.yml`; this release converts that logic into a documented, installable
-R package with an explicit function API. The original scripts are preserved,
-unchanged, under `inst/legacy-scripts/` for provenance.
+R package with an explicit function API. The original scripts are preserved
+under `inst/legacy-scripts/` for provenance, changed only where CRAN policy
+requires (they no longer clear the workspace, and they restore `par()`).
 
 ## New
 
@@ -32,7 +13,14 @@ unchanged, under `inst/legacy-scripts/` for provenance.
   `BayGMST_v1.0.R`.
 * `reduce_proxies()` -- ported from `utils/PAGES2k_reducedProxy_UNSC.R`.
   Supports `"PCR"`, `"LASSO"`, `"sPCR"`, and `"SPLS"`. `"SIR"` is included but
-  marked experimental (see "Known limitations" below).
+  marked experimental (see "Known limitations" below). It applies the
+  `max_na_frac` missingness screen before zero-filling gaps, the order of
+  Barboza et al.'s original script (`PAGES2k_reducedProxy_UNSC_OLD.R`). A
+  later edit of that script (`PAGES2k_reducedProxy_UNSC.R`) zero-filled
+  first, which hid internal gaps from the screen and let sparse records enter
+  the regression mostly as zeros; on large proxy pools that reduced proxy
+  stopped `fit_baygmst()` from converging. The output's `proxies` element
+  lists the records each segment used.
 * `fit_baygmst()` -- ported from the data-prep and `cmdstanr` sampling block
   in `BayGMST_v1.0.R`. Returns a `baygmst_fit` object instead of relying on
   variables left in the global environment.
