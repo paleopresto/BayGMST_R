@@ -84,6 +84,10 @@
 #'     across-segment average -- the single representative proxy series to
 #'     pass to [fit_baygmst()] (which accepts the whole object directly,
 #'     via [as_baygmst_proxy()]).}
+#'   \item{proxies}{A list with one character vector per segment, naming the
+#'     columns of `proxy_matrix` (or giving their indices, if it has no
+#'     column names) that passed the missingness screen and were used in that
+#'     segment. Skipped segments get `character(0)`.}
 #'   \item{method}{The method used, echoed back.}
 #'
 #' @examples
@@ -148,14 +152,11 @@ reduce_proxies <- function(proxy_matrix,
     if (length(finite) == 0) Inf else min(finite)
   }, numeric(1))
 
+  # Missingness is screened per segment on the scaled (still NA-bearing)
+  # matrix, and only surviving gaps are zero-filled, as in Barboza et al.'s
+  # original script. Zero-filling first would hide every internal gap from
+  # the `max_na_frac` checks.
   proxy_scaled <- scale(proxy_matrix)
-  proxy_filled <- apply(proxy_scaled, 2, function(x) {
-    seen_first <- cumsum(!is.na(x)) > 0
-    x[is.na(x) & seen_first] <- 0
-    x
-  })
-  rownames(proxy_filled) <- rownames(proxy_scaled)
-  colnames(proxy_filled) <- colnames(proxy_scaled)
 
   is_calib <- years %in% calib_years
   if (sum(is_calib) != length(temp_calib)) {
@@ -167,6 +168,12 @@ reduce_proxies <- function(proxy_matrix,
   }
 
   RP <- matrix(NA_real_, nrow = ny, ncol = ns)
+  proxy_ids <- if (is.null(colnames(proxy_matrix))) {
+    as.character(seq_len(np))
+  } else {
+    colnames(proxy_matrix)
+  }
+  proxies_used <- rep(list(character(0)), ns)
 
   for (k in seq_len(ns)) {
     t_min       <- 1 + (k - 1) * chunk
@@ -181,14 +188,16 @@ reduce_proxies <- function(proxy_matrix,
       next
     }
 
-    proxy_seg <- proxy_filled[time_span, seg_proxies, drop = FALSE]
+    proxy_seg <- proxy_scaled[time_span, seg_proxies, drop = FALSE]
     keep_full <- colMeans(is.na(proxy_seg)) < max_na_frac
     proxy_seg <- proxy_seg[, keep_full, drop = FALSE]
+    seg_proxies <- seg_proxies[keep_full]
 
     calib_idx_seg <- which(is_calib[time_span])
     proxy_calib   <- proxy_seg[calib_idx_seg, , drop = FALSE]
     keep_calib    <- colMeans(is.na(proxy_calib)) < max_na_frac
     proxy_seg     <- proxy_seg[, keep_calib, drop = FALSE]
+    seg_proxies   <- seg_proxies[keep_calib]
 
     proxy_seg[!is.finite(proxy_seg)] <- 0
 
@@ -215,6 +224,7 @@ reduce_proxies <- function(proxy_matrix,
       ), call. = FALSE)
     }
 
+    proxies_used[[k]] <- proxy_ids[seg_proxies]
     n_comp_k <- if (length(n_components) == 1) n_components else n_components[k]
 
     RP[time_span, k] <- .reduce_segment(
@@ -229,11 +239,17 @@ reduce_proxies <- function(proxy_matrix,
   }
 
   colnames(RP) <- paste0("RP", seq_len(ns))
+  names(proxies_used) <- colnames(RP)
   segments  <- data.frame(year = years, RP, check.names = FALSE)
   composite <- data.frame(year = years, RP1 = apply(RP, 1, mean, na.rm = TRUE))
 
   structure(
-    list(segments = segments, composite = composite, method = method),
+    list(
+      segments  = segments,
+      composite = composite,
+      proxies   = proxies_used,
+      method    = method
+    ),
     class = "baygmst_rp"
   )
 }
@@ -246,6 +262,10 @@ print.baygmst_rp <- function(x, ...) {
               format(min(x$composite$year)), format(max(x$composite$year)),
               nrow(x$composite)))
   cat(sprintf("  Segments: %d\n", ncol(x$segments) - 1L))
+  if (!is.null(x$proxies)) {
+    cat(sprintf("  Proxies per segment: %s\n",
+                paste(lengths(x$proxies), collapse = ", ")))
+  }
   cat("  Pass to fit_baygmst() directly, or use x$composite$RP1.\n")
   invisible(x)
 }

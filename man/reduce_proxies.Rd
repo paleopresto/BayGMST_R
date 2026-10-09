@@ -69,6 +69,10 @@ An object of class \code{"baygmst_rp"}, a list with components:
 across-segment average -- the single representative proxy series to
 pass to \code{\link[=fit_baygmst]{fit_baygmst()}} (which accepts the whole object directly,
 via \code{\link[=as_baygmst_proxy]{as_baygmst_proxy()}}).}
+\item{proxies}{A list with one character vector per segment, naming the
+columns of \code{proxy_matrix} (or giving their indices, if it has no
+column names) that passed the missingness screen and were used in that
+segment. Skipped segments get \code{character(0)}.}
 \item{method}{The method used, echoed back.}
 }
 \description{

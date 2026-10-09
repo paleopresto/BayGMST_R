@@ -1,3 +1,23 @@
+# BayGMST (development version)
+
+## Bug fixes
+
+* `reduce_proxies()` now applies its `max_na_frac` missingness screen before
+  zero-filling gaps, as Barboza et al.'s original script did. Since 0.1.0 it
+  zero-filled every gap after a record's first value first, so the screen saw
+  only leading NAs and kept almost every record: decadal records on an annual
+  grid, and records ending before the calibration window, entered the
+  regression mostly as zeros. On large proxy pools the resulting reduced proxy
+  stopped `fit_baygmst()` from converging (chains split on `phi_T`, rhat up to
+  2.4). The 0.1.0 behaviour came from a later edit to
+  `utils/PAGES2k_reducedProxy_UNSC.R`; `PAGES2k_reducedProxy_UNSC_OLD.R`
+  has the original order.
+
+## New
+
+* `reduce_proxies()` output gains a `proxies` element listing the records each
+  segment used, and its print method shows the count per segment.
+
 # BayGMST 0.1.0
 
 Initial packaging of the BayGMST model. Previously this repository was a
