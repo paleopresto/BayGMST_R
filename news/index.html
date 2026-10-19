@@ -35,13 +35,13 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="baygmst-010">BayGMST 0.1.0<a class="anchor" aria-label="anchor" href="#baygmst-010"></a></h2>
-<p>Initial packaging of the BayGMST model. Previously this repository was a collection of top-level analysis scripts (<code>R_scripts/</code>, <code>utils/</code>) driven by <code>config.yml</code>; this release converts that logic into a documented, installable R package with an explicit function API. The original scripts are preserved, unchanged, under <code>inst/legacy-scripts/</code> for provenance.</p>
+<p>Initial packaging of the BayGMST model. Previously this repository was a collection of top-level analysis scripts (<code>R_scripts/</code>, <code>utils/</code>) driven by <code>config.yml</code>; this release converts that logic into a documented, installable R package with an explicit function API. The original scripts are preserved under <code>inst/legacy-scripts/</code> for provenance, changed only where CRAN policy requires (they no longer clear the workspace, and they restore <code><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par()</a></code>).</p>
 <div class="section level3">
 <h3 id="new-0-1-0">New<a class="anchor" aria-label="anchor" href="#new-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/transform_forcings.html">transform_forcings()</a></code> – ported from the normalization block in <code>BayGMST_v1.0.R</code>.</li>
 <li>
-<code><a href="../reference/reduce_proxies.html">reduce_proxies()</a></code> – ported from <code>utils/PAGES2k_reducedProxy_UNSC.R</code>. Supports <code>"PCR"</code>, <code>"LASSO"</code>, <code>"sPCR"</code>, and <code>"SPLS"</code>. <code>"SIR"</code> is included but marked experimental (see “Known limitations” below).</li>
+<code><a href="../reference/reduce_proxies.html">reduce_proxies()</a></code> – ported from <code>utils/PAGES2k_reducedProxy_UNSC.R</code>. Supports <code>"PCR"</code>, <code>"LASSO"</code>, <code>"sPCR"</code>, and <code>"SPLS"</code>. <code>"SIR"</code> is included but marked experimental (see “Known limitations” below). It applies the <code>max_na_frac</code> missingness screen before zero-filling gaps, the order of Barboza et al.’s original script (<code>PAGES2k_reducedProxy_UNSC_OLD.R</code>). A later edit of that script (<code>PAGES2k_reducedProxy_UNSC.R</code>) zero-filled first, which hid internal gaps from the screen and let sparse records enter the regression mostly as zeros; on large proxy pools that reduced proxy stopped <code><a href="../reference/fit_baygmst.html">fit_baygmst()</a></code> from converging. The output’s <code>proxies</code> element lists the records each segment used.</li>
 <li>
 <code><a href="../reference/fit_baygmst.html">fit_baygmst()</a></code> – ported from the data-prep and <code>cmdstanr</code> sampling block in <code>BayGMST_v1.0.R</code>. Returns a <code>baygmst_fit</code> object instead of relying on variables left in the global environment.</li>
 <li>

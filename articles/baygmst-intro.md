@@ -64,6 +64,7 @@ rp
 #>   Method:   PCR
 #>   Years:    1700 to 2000 (n = 301)
 #>   Segments: 1
+#>   Proxies per segment: 6
 #>   Pass to fit_baygmst() directly, or use x$composite$RP1.
 ```
 
@@ -127,66 +128,66 @@ fit <- fit_baygmst(
 #> Chain 2 Iteration:    1 / 1300 [  0%]  (Warmup) 
 #> Chain 1 Iteration:  100 / 1300 [  7%]  (Warmup) 
 #> Chain 1 Iteration:  200 / 1300 [ 15%]  (Warmup) 
-#> Chain 2 Iteration:  100 / 1300 [  7%]  (Warmup) 
 #> Chain 1 Iteration:  300 / 1300 [ 23%]  (Warmup) 
 #> Chain 1 Iteration:  301 / 1300 [ 23%]  (Sampling) 
-#> Chain 2 Iteration:  200 / 1300 [ 15%]  (Warmup) 
+#> Chain 2 Iteration:  100 / 1300 [  7%]  (Warmup) 
 #> Chain 1 Iteration:  400 / 1300 [ 30%]  (Sampling) 
+#> Chain 1 Iteration:  500 / 1300 [ 38%]  (Sampling) 
+#> Chain 1 Iteration:  600 / 1300 [ 46%]  (Sampling) 
+#> Chain 1 Iteration:  700 / 1300 [ 53%]  (Sampling) 
+#> Chain 2 Iteration:  200 / 1300 [ 15%]  (Warmup) 
+#> Chain 1 Iteration:  800 / 1300 [ 61%]  (Sampling) 
+#> Chain 1 Iteration:  900 / 1300 [ 69%]  (Sampling) 
 #> Chain 2 Iteration:  300 / 1300 [ 23%]  (Warmup) 
 #> Chain 2 Iteration:  301 / 1300 [ 23%]  (Sampling) 
-#> Chain 1 Iteration:  500 / 1300 [ 38%]  (Sampling) 
-#> Chain 2 Iteration:  400 / 1300 [ 30%]  (Sampling) 
-#> Chain 1 Iteration:  600 / 1300 [ 46%]  (Sampling) 
-#> Chain 2 Iteration:  500 / 1300 [ 38%]  (Sampling) 
-#> Chain 2 Iteration:  600 / 1300 [ 46%]  (Sampling) 
-#> Chain 1 Iteration:  700 / 1300 [ 53%]  (Sampling) 
-#> Chain 2 Iteration:  700 / 1300 [ 53%]  (Sampling) 
-#> Chain 1 Iteration:  800 / 1300 [ 61%]  (Sampling) 
-#> Chain 2 Iteration:  800 / 1300 [ 61%]  (Sampling) 
-#> Chain 1 Iteration:  900 / 1300 [ 69%]  (Sampling) 
-#> Chain 2 Iteration:  900 / 1300 [ 69%]  (Sampling) 
 #> Chain 1 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
-#> Chain 2 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
+#> Chain 2 Iteration:  400 / 1300 [ 30%]  (Sampling) 
 #> Chain 1 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
-#> Chain 2 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
+#> Chain 2 Iteration:  500 / 1300 [ 38%]  (Sampling) 
 #> Chain 1 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
-#> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
+#> Chain 2 Iteration:  600 / 1300 [ 46%]  (Sampling) 
+#> Chain 2 Iteration:  700 / 1300 [ 53%]  (Sampling) 
 #> Chain 1 Iteration: 1300 / 1300 [100%]  (Sampling) 
+#> Chain 2 Iteration:  800 / 1300 [ 61%]  (Sampling) 
+#> Chain 1 finished in 1.4 seconds.
+#> Chain 2 Iteration:  900 / 1300 [ 69%]  (Sampling) 
+#> Chain 2 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
+#> Chain 2 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
+#> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
 #> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 1 finished in 2.9 seconds.
-#> Chain 2 finished in 2.9 seconds.
+#> Chain 2 finished in 1.9 seconds.
 #> 
 #> Both chains finished successfully.
-#> Mean chain execution time: 2.9 seconds.
-#> Total execution time: 3.0 seconds.
+#> Mean chain execution time: 1.7 seconds.
+#> Total execution time: 2.1 seconds.
 summary(fit)
 #> Posterior parameter summary:
-#>    variable         mean       median          sd         mad          q5
-#> 1    alpha0 -0.065028365 -0.065352501 0.012581323 0.012354588 -0.08519683
-#> 2    alpha1  0.259176863  0.259394285 0.038686100 0.039645569  0.19843176
-#> 3     phi_R  0.421939053  0.422557005 0.056391144 0.057185328  0.33135071
-#> 4     phi_T  0.557697091  0.558897910 0.066156538 0.068346622  0.44977236
-#> 5     beta0 -0.203017805 -0.203466845 0.033991214 0.035376697 -0.25942460
-#> 6     betaG  0.272715339  0.272000680 0.049631559 0.049397356  0.19069658
-#> 7     betaS -0.006414658 -0.006468269 0.048658313 0.049626635 -0.08546052
-#> 8     betaV  0.060345789  0.060124152 0.017424434 0.017244751  0.03208148
-#> 9   sigma_y  0.103982659  0.103674475 0.006032221 0.005968366  0.09467305
-#> 10  sigma_z  0.112829340  0.112775265 0.004726679 0.004596357  0.10514527
-#>            q95      rhat  ess_bulk ess_tail
-#> 1  -0.04372216 1.0027969 2656.2336 1384.502
-#> 2   0.32287198 1.0021939 1374.3605 1461.680
-#> 3   0.51107871 1.0002487 1794.0149 1732.952
-#> 4   0.66394920 1.0022826  767.3195 1329.076
-#> 5  -0.14860656 1.0037575  817.0683 1555.701
-#> 6   0.35314789 1.0013899 1357.8888 1499.608
-#> 7   0.07405890 1.0001183 1106.6513 1308.938
-#> 8   0.08934192 0.9996564 1352.0124 1499.242
-#> 9   0.11445876 1.0010497  916.8057 1372.267
-#> 10  0.12082047 1.0051395 2550.9664 1327.587
+#>    variable        mean      median          sd         mad          q5
+#> 1    alpha0 -0.06483890 -0.06479368 0.012864394 0.012919098 -0.08616641
+#> 2    alpha1  0.26192061  0.26065676 0.040014450 0.038979978  0.19558742
+#> 3     phi_R  0.42065623  0.42223359 0.056968593 0.058957976  0.32676857
+#> 4     phi_T  0.55946381  0.55955643 0.067630249 0.067263212  0.45444761
+#> 5     beta0 -0.20119179 -0.20130989 0.034409116 0.034346371 -0.25773441
+#> 6     betaG  0.27374461  0.27326430 0.051265366 0.052224778  0.18955831
+#> 7     betaS -0.01146663 -0.01275857 0.050571557 0.051397436 -0.09430322
+#> 8     betaV  0.06126381  0.06103615 0.017320465 0.017011913  0.03283503
+#> 9   sigma_y  0.10387777  0.10362326 0.005999494 0.005874133  0.09449950
+#> 10  sigma_z  0.11275083  0.11263524 0.004739298 0.004792831  0.10534086
+#>            q95      rhat  ess_bulk  ess_tail
+#> 1  -0.04345803 1.0003871 2324.5065 1430.0226
+#> 2   0.32906312 1.0011778 1010.4032 1413.9274
+#> 3   0.51241216 1.0005227 1327.0289 1628.7055
+#> 4   0.67551736 1.0035327  595.4946  647.7400
+#> 5  -0.14381323 1.0018334  624.9322  996.4503
+#> 6   0.35909683 1.0012401  849.9260 1200.6283
+#> 7   0.07454485 0.9995202  799.0300 1010.7448
+#> 8   0.09076808 0.9996033 1016.0437 1378.6688
+#> 9   0.11424406 1.0069576  728.4398 1349.8923
+#> 10  0.12087903 0.9998866 2135.5942 1236.4933
 #> 
 #> Instrumental-period fit performance:
 #>      RMSE       MAE        Bias Correlation        R2 R2_detrended
-#>  0.130152 0.1064078 -0.03095854   0.8547477 0.7305936    0.3518489
+#>  0.130057 0.1061169 -0.02977442   0.8540961 0.7294801    0.3461799
 ```
 
 ## 5. Visualize the reconstruction
@@ -249,51 +250,51 @@ cv <- cv_baygmst(
 #> Chain 1 Iteration:    1 / 1300 [  0%]  (Warmup) 
 #> Chain 2 Iteration:    1 / 1300 [  0%]  (Warmup)
 #> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/Rtmp53IqqQ/model-1caf7952876a.stan', line 75, column 2 to column 40)
+#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/Rtmpj67fZw/model-1c1842aaadfe.stan', line 75, column 2 to column 40)
 #> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 2
 #> Chain 1 Iteration:  100 / 1300 [  7%]  (Warmup) 
 #> Chain 2 Iteration:  100 / 1300 [  7%]  (Warmup) 
-#> Chain 2 Iteration:  200 / 1300 [ 15%]  (Warmup) 
 #> Chain 1 Iteration:  200 / 1300 [ 15%]  (Warmup) 
+#> Chain 2 Iteration:  200 / 1300 [ 15%]  (Warmup) 
 #> Chain 1 Iteration:  300 / 1300 [ 23%]  (Warmup) 
 #> Chain 1 Iteration:  301 / 1300 [ 23%]  (Sampling) 
 #> Chain 2 Iteration:  300 / 1300 [ 23%]  (Warmup) 
 #> Chain 2 Iteration:  301 / 1300 [ 23%]  (Sampling) 
-#> Chain 2 Iteration:  400 / 1300 [ 30%]  (Sampling) 
 #> Chain 1 Iteration:  400 / 1300 [ 30%]  (Sampling) 
+#> Chain 2 Iteration:  400 / 1300 [ 30%]  (Sampling) 
 #> Chain 2 Iteration:  500 / 1300 [ 38%]  (Sampling) 
 #> Chain 1 Iteration:  500 / 1300 [ 38%]  (Sampling) 
-#> Chain 2 Iteration:  600 / 1300 [ 46%]  (Sampling) 
 #> Chain 1 Iteration:  600 / 1300 [ 46%]  (Sampling) 
+#> Chain 2 Iteration:  600 / 1300 [ 46%]  (Sampling) 
 #> Chain 2 Iteration:  700 / 1300 [ 53%]  (Sampling) 
 #> Chain 1 Iteration:  700 / 1300 [ 53%]  (Sampling) 
 #> Chain 2 Iteration:  800 / 1300 [ 61%]  (Sampling) 
 #> Chain 1 Iteration:  800 / 1300 [ 61%]  (Sampling) 
 #> Chain 2 Iteration:  900 / 1300 [ 69%]  (Sampling) 
-#> Chain 2 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
 #> Chain 1 Iteration:  900 / 1300 [ 69%]  (Sampling) 
+#> Chain 2 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
 #> Chain 2 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
 #> Chain 1 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
-#> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
 #> Chain 1 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
-#> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 2 finished in 3.7 seconds.
+#> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
 #> Chain 1 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
+#> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
+#> Chain 2 finished in 2.2 seconds.
 #> Chain 1 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 1 finished in 4.2 seconds.
+#> Chain 1 finished in 2.3 seconds.
 #> 
 #> Both chains finished successfully.
-#> Mean chain execution time: 3.9 seconds.
-#> Total execution time: 4.2 seconds.
+#> Mean chain execution time: 2.3 seconds.
+#> Total execution time: 2.4 seconds.
 #> 
 #> Running MCMC with 2 parallel chains...
 #> 
 #> Chain 1 Iteration:    1 / 1300 [  0%]  (Warmup) 
 #> Chain 2 Iteration:    1 / 1300 [  0%]  (Warmup)
 #> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/Rtmp53IqqQ/model-1caf7952876a.stan', line 75, column 2 to column 40)
+#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/Rtmpj67fZw/model-1c1842aaadfe.stan', line 75, column 2 to column 40)
 #> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 2
@@ -312,10 +313,10 @@ cv <- cv_baygmst(
 #> Chain 2 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
 #> Chain 2 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
 #> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
+#> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
+#> Chain 2 finished in 1.1 seconds.
 #> Chain 1 Iteration:  300 / 1300 [ 23%]  (Warmup) 
 #> Chain 1 Iteration:  301 / 1300 [ 23%]  (Sampling) 
-#> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 2 finished in 2.0 seconds.
 #> Chain 1 Iteration:  400 / 1300 [ 30%]  (Sampling) 
 #> Chain 1 Iteration:  500 / 1300 [ 38%]  (Sampling) 
 #> Chain 1 Iteration:  600 / 1300 [ 46%]  (Sampling) 
@@ -326,18 +327,18 @@ cv <- cv_baygmst(
 #> Chain 1 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
 #> Chain 1 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
 #> Chain 1 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 1 finished in 3.3 seconds.
+#> Chain 1 finished in 2.7 seconds.
 #> 
 #> Both chains finished successfully.
-#> Mean chain execution time: 2.6 seconds.
-#> Total execution time: 3.4 seconds.
+#> Mean chain execution time: 1.9 seconds.
+#> Total execution time: 2.7 seconds.
 #> 
 #> Running MCMC with 2 parallel chains...
 #> 
 #> Chain 1 Iteration:    1 / 1300 [  0%]  (Warmup) 
 #> Chain 2 Iteration:    1 / 1300 [  0%]  (Warmup)
 #> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/Rtmp53IqqQ/model-1caf7952876a.stan', line 75, column 2 to column 40)
+#> Chain 2 Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in '/tmp/Rtmpj67fZw/model-1c1842aaadfe.stan', line 75, column 2 to column 40)
 #> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 2
@@ -345,41 +346,41 @@ cv <- cv_baygmst(
 #> Chain 2 Iteration:  100 / 1300 [  7%]  (Warmup) 
 #> Chain 1 Iteration:  200 / 1300 [ 15%]  (Warmup) 
 #> Chain 2 Iteration:  200 / 1300 [ 15%]  (Warmup) 
-#> Chain 2 Iteration:  300 / 1300 [ 23%]  (Warmup) 
-#> Chain 2 Iteration:  301 / 1300 [ 23%]  (Sampling) 
 #> Chain 1 Iteration:  300 / 1300 [ 23%]  (Warmup) 
 #> Chain 1 Iteration:  301 / 1300 [ 23%]  (Sampling) 
-#> Chain 2 Iteration:  400 / 1300 [ 30%]  (Sampling) 
+#> Chain 2 Iteration:  300 / 1300 [ 23%]  (Warmup) 
+#> Chain 2 Iteration:  301 / 1300 [ 23%]  (Sampling) 
 #> Chain 1 Iteration:  400 / 1300 [ 30%]  (Sampling) 
-#> Chain 2 Iteration:  500 / 1300 [ 38%]  (Sampling) 
+#> Chain 2 Iteration:  400 / 1300 [ 30%]  (Sampling) 
 #> Chain 1 Iteration:  500 / 1300 [ 38%]  (Sampling) 
-#> Chain 2 Iteration:  600 / 1300 [ 46%]  (Sampling) 
+#> Chain 2 Iteration:  500 / 1300 [ 38%]  (Sampling) 
 #> Chain 1 Iteration:  600 / 1300 [ 46%]  (Sampling) 
-#> Chain 2 Iteration:  700 / 1300 [ 53%]  (Sampling) 
+#> Chain 2 Iteration:  600 / 1300 [ 46%]  (Sampling) 
 #> Chain 1 Iteration:  700 / 1300 [ 53%]  (Sampling) 
-#> Chain 2 Iteration:  800 / 1300 [ 61%]  (Sampling) 
+#> Chain 2 Iteration:  700 / 1300 [ 53%]  (Sampling) 
 #> Chain 1 Iteration:  800 / 1300 [ 61%]  (Sampling) 
-#> Chain 2 Iteration:  900 / 1300 [ 69%]  (Sampling) 
+#> Chain 2 Iteration:  800 / 1300 [ 61%]  (Sampling) 
 #> Chain 1 Iteration:  900 / 1300 [ 69%]  (Sampling) 
-#> Chain 2 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
+#> Chain 2 Iteration:  900 / 1300 [ 69%]  (Sampling) 
 #> Chain 1 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
-#> Chain 2 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
+#> Chain 2 Iteration: 1000 / 1300 [ 76%]  (Sampling) 
 #> Chain 1 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
-#> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
+#> Chain 2 Iteration: 1100 / 1300 [ 84%]  (Sampling) 
 #> Chain 1 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
-#> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 2 finished in 3.7 seconds.
+#> Chain 2 Iteration: 1200 / 1300 [ 92%]  (Sampling) 
 #> Chain 1 Iteration: 1300 / 1300 [100%]  (Sampling) 
-#> Chain 1 finished in 4.0 seconds.
+#> Chain 2 Iteration: 1300 / 1300 [100%]  (Sampling) 
+#> Chain 1 finished in 2.2 seconds.
+#> Chain 2 finished in 2.2 seconds.
 #> 
 #> Both chains finished successfully.
-#> Mean chain execution time: 3.9 seconds.
-#> Total execution time: 4.1 seconds.
+#> Mean chain execution time: 2.2 seconds.
+#> Total execution time: 2.3 seconds.
 cv
 #> <baygmst_cv>
 #>   Folds:  3
-#>   R2 (posterior mean, per fold): -4.11, 0.24, -0.37
-#>   Median R2: -0.37
+#>   R2 (posterior mean, per fold): -3.73, 0.25, -0.29
+#>   Median R2: -0.29
 plot_cv(cv)
 ```
 

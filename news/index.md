@@ -6,8 +6,10 @@ Initial packaging of the BayGMST model. Previously this repository was a
 collection of top-level analysis scripts (`R_scripts/`, `utils/`) driven
 by `config.yml`; this release converts that logic into a documented,
 installable R package with an explicit function API. The original
-scripts are preserved, unchanged, under `inst/legacy-scripts/` for
-provenance.
+scripts are preserved under `inst/legacy-scripts/` for provenance,
+changed only where CRAN policy requires (they no longer clear the
+workspace, and they restore
+[`par()`](https://rdrr.io/r/graphics/par.html)).
 
 ### New
 
@@ -16,7 +18,16 @@ provenance.
 - [`reduce_proxies()`](https://paleopresto.github.io/BayGMST_R/reference/reduce_proxies.md)
   – ported from `utils/PAGES2k_reducedProxy_UNSC.R`. Supports `"PCR"`,
   `"LASSO"`, `"sPCR"`, and `"SPLS"`. `"SIR"` is included but marked
-  experimental (see “Known limitations” below).
+  experimental (see “Known limitations” below). It applies the
+  `max_na_frac` missingness screen before zero-filling gaps, the order
+  of Barboza et al.’s original script
+  (`PAGES2k_reducedProxy_UNSC_OLD.R`). A later edit of that script
+  (`PAGES2k_reducedProxy_UNSC.R`) zero-filled first, which hid internal
+  gaps from the screen and let sparse records enter the regression
+  mostly as zeros; on large proxy pools that reduced proxy stopped
+  [`fit_baygmst()`](https://paleopresto.github.io/BayGMST_R/reference/fit_baygmst.md)
+  from converging. The output’s `proxies` element lists the records each
+  segment used.
 - [`fit_baygmst()`](https://paleopresto.github.io/BayGMST_R/reference/fit_baygmst.md)
   – ported from the data-prep and `cmdstanr` sampling block in
   `BayGMST_v1.0.R`. Returns a `baygmst_fit` object instead of relying on

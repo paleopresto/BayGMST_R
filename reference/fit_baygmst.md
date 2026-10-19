@@ -164,7 +164,7 @@ if (instantiate::stan_cmdstan_exists()) {
 #> Chain 1 Iteration: 1000 / 1200 [ 83%]  (Sampling) 
 #> Chain 1 Iteration: 1100 / 1200 [ 91%]  (Sampling) 
 #> Chain 1 Iteration: 1200 / 1200 [100%]  (Sampling) 
-#> Chain 1 finished in 2.1 seconds.
+#> Chain 1 finished in 1.1 seconds.
 #> Posterior parameter summary:
 #>    variable         mean       median          sd         mad          q5
 #> 1    alpha0 -0.016950119 -0.013973503 0.050045327 0.051853721 -0.10217389

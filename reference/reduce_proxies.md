@@ -110,6 +110,13 @@ An object of class `"baygmst_rp"`, a list with components:
   (which accepts the whole object directly, via
   [`as_baygmst_proxy()`](https://paleopresto.github.io/BayGMST_R/reference/as_baygmst_proxy.md)).
 
+- proxies:
+
+  A list with one character vector per segment, naming the columns of
+  `proxy_matrix` (or giving their indices, if it has no column names)
+  that passed the missingness screen and were used in that segment.
+  Skipped segments get `character(0)`.
+
 - method:
 
   The method used, echoed back.

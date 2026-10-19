@@ -161,6 +161,12 @@ across-segment average – the single representative proxy series to
 pass to <code><a href="fit_baygmst.html">fit_baygmst()</a></code> (which accepts the whole object directly,
 via <code><a href="as_baygmst_proxy.html">as_baygmst_proxy()</a></code>).</p></dd>
 
+<dt>proxies</dt>
+<dd><p>A list with one character vector per segment, naming the
+columns of <code>proxy_matrix</code> (or giving their indices, if it has no
+column names) that passed the missingness screen and were used in that
+segment. Skipped segments get <code>character(0)</code>.</p></dd>
+
 <dt>method</dt>
 <dd><p>The method used, echoed back.</p></dd>
 
