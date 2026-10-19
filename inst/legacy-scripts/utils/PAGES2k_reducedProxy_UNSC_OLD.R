@@ -3,7 +3,7 @@
 # - eliminated "eigenvalue" selection bc results were garbage
 # - changed PCA to PCR
 # - only fill in composite up from tMin onwards
-rm(list=ls())
+# rm(list=ls()) removed for CRAN: do not clear the user's workspace
 library(dplyr)
 library(fda)
 library(ggplot2)

@@ -124,3 +124,42 @@ test_that("reduce_proxies(method = 'SIR') warns that it is experimental", {
     "experimental"
   )
 })
+
+test_that("reduce_proxies screens missingness before zero-filling gaps", {
+  set.seed(4)
+  n <- 300
+  years <- seq_len(n)
+  true_signal <- cumsum(rnorm(n, 0, 0.1))
+  noisy <- function() true_signal + rnorm(n, 0, 0.05)
+  decadal <- noisy()
+  decadal[years %% 10 != 0] <- NA # 90% missing after its first value
+  ends_early <- noisy()
+  ends_early[years > 150] <- NA # no data in the calibration window
+  late_sparse <- noisy()
+  late_sparse[1:120] <- NA # starts after row 101; only seen by segment 2
+  late_sparse[seq(130, n, by = 4)] <- NA # 25% internal gaps
+  proxy_matrix <- cbind(
+    p1 = noisy(), p2 = noisy(), p3 = noisy(),
+    decadal = decadal, ends_early = ends_early, late_sparse = late_sparse
+  )
+  calib_years <- 201:300
+  out <- reduce_proxies(
+    proxy_matrix, years, true_signal[calib_years], calib_years,
+    method = "PCR", chunk = 100
+  )
+  expect_named(out$proxies, c("RP1", "RP2", "RP3"))
+  for (k in seq_along(out$proxies)) {
+    expect_setequal(out$proxies[[k]], c("p1", "p2", "p3"))
+  }
+  expect_false(anyNA(out$composite$RP1))
+})
+
+test_that("reduce_proxies records proxy indices when columns are unnamed", {
+  d <- make_synthetic_proxies()
+  calib_years <- 51:100
+  out <- reduce_proxies(
+    unname(d$proxy_matrix), d$years, d$true_signal[calib_years], calib_years,
+    method = "PCR", chunk = 100
+  )
+  expect_equal(out$proxies, list(RP1 = c("1", "2", "3")))
+})

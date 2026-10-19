@@ -22,7 +22,10 @@ Description: Fits a Bayesian hierarchical AR(1)-driven state-space model
     partial least squares, LASSO, or supervised PCR), estimate the parameters
     in the reconstruction model, run k-fold cross-validation, provide
     uncertainty quantification on the reconstructed temperatures, and
-    visualize reconstructions and posterior draws.
+    visualize reconstructions and posterior draws. The model and methods
+    follow Barboza et al. (2014) <doi:10.1214/14-AOAS785>, Barboza et al.
+    (2019) <doi:10.1007/s13253-019-00372-4>, and Wang (2020)
+    <doi:10.25335/vb7s-rh49>.
 License: GPL (>= 3)
 Encoding: UTF-8
 Language: en-US

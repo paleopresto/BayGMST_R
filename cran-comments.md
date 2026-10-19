@@ -1,6 +1,17 @@
-## New submission
+## Resubmission
 
-This is the first submission of BayGMST.
+This is a resubmission. In response to the review:
+
+* Added the method references to the Description field of DESCRIPTION, in
+  the form authors (year) <doi:...>.
+* The legacy scripts under inst/legacy-scripts/ (kept for provenance) no
+  longer call rm(list = ls()), and the one that changes par() now saves it
+  with oldpar <- par(...) and restores it with par(oldpar). No examples,
+  vignettes, or tests change options(), par(), or the working directory.
+
+We also fixed a bug found since the first submission: reduce_proxies()
+screened records for missing data after zero-filling their gaps, so the
+screen had no effect. It now screens first, as the original method did.
 
 ## Test environments
 

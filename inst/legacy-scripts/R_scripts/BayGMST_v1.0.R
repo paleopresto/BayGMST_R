@@ -275,11 +275,11 @@ png(
   res = 300,
   bg = "white"
 )
-par(mfrow = c(1, 2))
+oldpar <- par(mfrow = c(1, 2))
 df_ins$resid <- df_ins$T.obs - df_ins$T.mean
 acf(df_ins$resid, na.action = na.pass, main = "ACF of fitted residuals")
 pacf(df_ins$resid, na.action = na.pass, main = "PACF of fitted residuals")
-par(mfrow = c(1, 1))
+par(oldpar)
 dev.off()
 
 
