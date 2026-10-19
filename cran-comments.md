@@ -1,6 +1,6 @@
 ## Resubmission
 
-This is a resubmission. In response to the review of 2026-10-08:
+This is a resubmission. In response to the review:
 
 * Added the method references to the Description field of DESCRIPTION, in
   the form authors (year) <doi:...>.
