@@ -13,7 +13,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/paleopresto/BayGMST_R/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/paleopresto/BayGMST_R/blob/v0.1.0/DESCRIPTION)
 
 Bagwell T, Emile-Geay J, Viens F, McKay N (2026). *BayGMST: Bayesian
 Reconstruction of Global Mean Surface Temperature*. R package version

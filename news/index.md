@@ -2,6 +2,8 @@
 
 ## BayGMST 0.1.0
 
+CRAN release: 2026-11-21
+
 Initial packaging of the BayGMST model. Previously this repository was a
 collection of top-level analysis scripts (`R_scripts/`, `utils/`) driven
 by `config.yml`; this release converts that logic into a documented,
