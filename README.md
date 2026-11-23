@@ -5,13 +5,13 @@ Bayesian hierarchical AR(1) state-space model reconstructing global mean
 surface temperature (GMST) from a reduced paleoclimate proxy network,
 instrumental observations, and radiative forcings.
 
-**Status:** restructured (branch `CRAN`) from a collection of top-level
-analysis scripts into an installable R package aimed at eventual CRAN
-submission. See `NEWS.md` for exactly what changed in that restructuring, and
-`CRAN-READINESS.md` for the remaining steps before an actual submission
-(this restructuring was done in an environment with no R installed, so
-several files -- `NAMESPACE`, `man/*.Rd` -- are hand-authored placeholders
-that must be regenerated and verified with real R tooling; see that file).
+[![CRAN status](https://www.r-pkg.org/badges/version/BayGMST)](https://cran.r-project.org/package=BayGMST)
+[![DOI](https://img.shields.io/badge/DOI-10.32614%2FCRAN.package.BayGMST-blue)](https://doi.org/10.32614/CRAN.package.BayGMST)
+
+**Status:** version 0.1.0 is on
+[CRAN](https://cran.r-project.org/package=BayGMST) (published 2026-11-21).
+See `NEWS.md` for what changed in converting the original analysis scripts
+into this package.
 
 ## Installation
 
@@ -32,8 +32,8 @@ cmdstanr::install_cmdstan()
 Then install BayGMST itself:
 
 ```r
-install.packages("BayGMST")                      # once on CRAN
-# remotes::install_github("paleopresto/BayGMST_R") # development version
+install.packages("BayGMST")                        # CRAN release
+# remotes::install_github("paleopresto/BayGMST_R")  # development version
 ```
 
 ## Usage
