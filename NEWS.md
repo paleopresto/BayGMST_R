@@ -7,7 +7,9 @@
   analyses that need individual draws rather than the summary bands of
   `reconstruct()`. Instrumental years hold either the proxy-only estimate
   (`instrumental = "proxy_only"`, default) or the observed values
-  (`"observed"`), giving a continuous GMST ensemble.
+  (`"observed"`), giving a continuous GMST ensemble. `n_members` sets the
+  ensemble size, up to the number of post-warmup draws in the fit (e.g.
+  10000 members needs `chains * iter_sampling >= 10000`).
 
 ## Bug fixes
 

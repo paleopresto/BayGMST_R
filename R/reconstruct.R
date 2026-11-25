@@ -105,8 +105,11 @@ reconstruct <- function(fit,
 #' }
 #'
 #' @param fit A `"baygmst_fit"` object, as returned by [fit_baygmst()].
-#' @param n_members Number of ensemble members to return, at most the number
-#'   of post-warmup draws. `NULL` returns all draws.
+#' @param n_members Number of ensemble members to return. It cannot exceed
+#'   the number of post-warmup draws in the fit (`chains * iter_sampling` in
+#'   [fit_baygmst()]; 6000 with the defaults), so for a larger ensemble, e.g.
+#'   10000 members, fit with more draws (e.g. `chains = 4, iter_sampling =
+#'   2500`). `NULL` returns all draws.
 #' @param instrumental What to use for the instrumental years:
 #'   `"proxy_only"` (default) or `"observed"`. See Details.
 #'
@@ -150,8 +153,11 @@ reconstruction_ensemble <- function(fit,
          call. = FALSE)
   }
   if (n_members > n_draws) {
-    stop(sprintf("n_members (%d) exceeds the %d post-warmup draws.",
-                 n_members, n_draws), call. = FALSE)
+    stop(sprintf(paste0(
+      "n_members (%d) exceeds the %d post-warmup draws in this fit. ",
+      "Refit with more draws (chains * iter_sampling >= %d in fit_baygmst()), ",
+      "or use n_members = NULL for all draws."),
+      n_members, n_draws, n_members), call. = FALSE)
   }
   keep <- unique(round(seq(1, n_draws, length.out = n_members)))
 

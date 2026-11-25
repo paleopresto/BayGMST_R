@@ -13,8 +13,10 @@ reconstruction_ensemble(
 \arguments{
 \item{fit}{A \code{"baygmst_fit"} object, as returned by \code{\link[=fit_baygmst]{fit_baygmst()}}.}
 
-\item{n_members}{Number of ensemble members to return, at most the number
-of post-warmup draws. \code{NULL} returns all draws.}
+\item{n_members}{Number of ensemble members to return. It cannot exceed
+the number of post-warmup draws in the fit (\code{chains * iter_sampling} in
+\code{\link[=fit_baygmst]{fit_baygmst()}}; 6000 with the defaults), so for a larger ensemble, e.g.
+10000 members, fit with more draws (e.g. \verb{chains = 4, iter_sampling = 2500}). \code{NULL} returns all draws.}
 
 \item{instrumental}{What to use for the instrumental years:
 \code{"proxy_only"} (default) or \code{"observed"}. See Details.}
