@@ -34,6 +34,7 @@ reference:
 - title: Extract and visualize results
   contents:
   - reconstruct
+  - reconstruction_ensemble
   - summary.baygmst_fit
   - print.baygmst_fit
   - plot.baygmst_fit

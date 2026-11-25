@@ -80,3 +80,102 @@ reconstruct <- function(fit,
 
   out[order(out$year), , drop = FALSE]
 }
+
+#' Extract posterior ensemble members of the reconstruction
+#'
+#' Returns individual posterior draws of the temperature series, one column
+#' per ensemble member, for analyses that need more than the summary bands of
+#' [reconstruct()] (e.g. propagating uncertainty into trends, extremes, or
+#' comparisons with other reconstructions). Members are evenly thinned from
+#' all post-warmup draws, so each column is one coherent draw of the whole
+#' series.
+#'
+#' For the reconstructed (pre-instrumental) years each member is a draw of the
+#' latent temperature `y_mis`. For the instrumental years, `instrumental`
+#' chooses what goes in:
+#' \describe{
+#'   \item{`"proxy_only"`}{(default) draws of `y_ins_fitted`, the estimate of
+#'     the instrumental years from the proxies alone (the quantity whose bands
+#'     [reconstruct()] reports for those years). Use this to compare the
+#'     proxy-based estimate with the instrumental record.}
+#'   \item{`"observed"`}{the instrumental values themselves, identical in
+#'     every member. Because the model treats instrumental temperature as
+#'     error-free, this is the posterior of the temperature in those years;
+#'     use it for a continuous GMST ensemble spanning the whole period.}
+#' }
+#'
+#' @param fit A `"baygmst_fit"` object, as returned by [fit_baygmst()].
+#' @param n_members Number of ensemble members to return, at most the number
+#'   of post-warmup draws. `NULL` returns all draws.
+#' @param instrumental What to use for the instrumental years:
+#'   `"proxy_only"` (default) or `"observed"`. See Details.
+#'
+#' @return A `data.frame` with one row per year in `fit$years` and columns
+#'   \item{year}{Calendar year.}
+#'   \item{type}{`"reconstruction"` or `"instrumental"`.}
+#'   \item{T_obs}{Observed instrumental temperature (`NA` for reconstructed
+#'     years).}
+#'   \item{m0001, m0002, ...}{One column per ensemble member.}
+#'   The draw indices used are stored in `attr(x, "draws")`. Save it yourself,
+#'   e.g. `write.csv(x, gzfile("gmst_ensemble.csv.gz"), row.names = FALSE)`.
+#'
+#' @seealso [reconstruct()] for summary bands.
+#' @export
+reconstruction_ensemble <- function(fit,
+                                    n_members = 1000,
+                                    instrumental = c("proxy_only",
+                                                     "observed")) {
+  stopifnot(inherits(fit, "baygmst_fit"))
+  instrumental <- match.arg(instrumental)
+
+  idx_obs <- fit$idx_obs
+  idx_mis <- fit$idx_mis
+  mis_cols <- paste0("y_mis[", seq_along(idx_mis), "]")
+  ins_cols <- paste0("y_ins_fitted[", seq_along(idx_obs), "]")
+  vars <- c(if (length(idx_mis) > 0) "y_mis",
+            if (instrumental == "proxy_only") "y_ins_fitted")
+
+  dm <- if (length(vars) > 0) {
+    posterior::as_draws_matrix(fit$fit$draws(vars))
+  }
+  n_draws <- if (!is.null(dm)) {
+    posterior::ndraws(dm)
+  } else {
+    fit$fit$num_chains() * fit$fit$metadata()$iter_sampling
+  }
+  if (is.null(n_members)) n_members <- n_draws
+  if (length(n_members) != 1 || is.na(n_members) || n_members < 1 ||
+      n_members != round(n_members)) {
+    stop("n_members must be a single positive whole number or NULL.",
+         call. = FALSE)
+  }
+  if (n_members > n_draws) {
+    stop(sprintf("n_members (%d) exceeds the %d post-warmup draws.",
+                 n_members, n_draws), call. = FALSE)
+  }
+  keep <- unique(round(seq(1, n_draws, length.out = n_members)))
+
+  ens <- matrix(NA_real_, nrow = length(fit$years), ncol = length(keep))
+  if (length(idx_mis) > 0) {
+    ens[idx_mis, ] <- t(unclass(dm[keep, mis_cols, drop = FALSE]))
+  }
+  if (instrumental == "proxy_only") {
+    ens[idx_obs, ] <- t(unclass(dm[keep, ins_cols, drop = FALSE]))
+  } else {
+    ens[idx_obs, ] <- fit$data$y_obs
+  }
+  colnames(ens) <- sprintf("m%04d", seq_along(keep))
+
+  T_obs <- rep(NA_real_, length(fit$years))
+  T_obs[idx_obs] <- fit$data$y_obs
+  out <- data.frame(
+    year  = fit$years,
+    type  = ifelse(seq_along(fit$years) %in% idx_obs, "instrumental",
+                   "reconstruction"),
+    T_obs = T_obs,
+    ens,
+    check.names = FALSE
+  )
+  attr(out, "draws") <- keep
+  out
+}

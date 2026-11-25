@@ -53,6 +53,15 @@ test_that("fit_baygmst fits and reconstruct()/summary() work end to end", {
   expect_equal(nrow(recon), n)
   expect_setequal(unique(recon$type), c("instrumental", "reconstruction"))
 
+  ens <- reconstruction_ensemble(fit, n_members = 200)
+  expect_equal(dim(ens), c(n, 3 + 200))
+  expect_false(anyNA(ens[, -(1:3)]))
+  # member means agree with reconstruct()'s posterior means
+  expect_equal(rowMeans(ens[, -(1:3)]), recon$T_mean, tolerance = 0.05)
+  ens_obs <- reconstruction_ensemble(fit, n_members = 200,
+                                     instrumental = "observed")
+  expect_equal(ens_obs$m0001[41:60], instrumental_T[41:60])
+
   s <- summary(fit)
   expect_s3_class(s, "summary.baygmst_fit")
   expect_true(all(c("RMSE", "MAE", "Bias", "Correlation", "R2") %in% names(s$performance)))

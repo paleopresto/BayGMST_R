@@ -1,5 +1,14 @@
 # BayGMST (development version)
 
+## New
+
+* `reconstruction_ensemble()` returns posterior ensemble members of the
+  reconstruction (one column per evenly thinned draw, 1000 by default), for
+  analyses that need individual draws rather than the summary bands of
+  `reconstruct()`. Instrumental years hold either the proxy-only estimate
+  (`instrumental = "proxy_only"`, default) or the observed values
+  (`"observed"`), giving a continuous GMST ensemble.
+
 ## Bug fixes
 
 * `y_ins_fitted`, the proxy-only estimate of the instrumental years that

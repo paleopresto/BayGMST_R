@@ -14,6 +14,11 @@ make_mock_fit <- function(n_obs = 20, n_mis = 30, n_draws = 40, seed = 42) {
     rnorm(n_draws * n_mis), nrow = n_draws,
     dimnames = list(NULL, paste0("y_mis[", seq_len(n_mis), "]"))
   )
+  y_ins_draws <- matrix(
+    rnorm(n_draws * n_obs), nrow = n_draws,
+    dimnames = list(NULL, paste0("y_ins_fitted[", seq_len(n_obs), "]"))
+  )
+  all_draws <- cbind(y_mis_draws, y_ins_draws)
 
   mock_cmdstan <- list(
     # reconstruct(): fit$summary(variables = "y_ins_fitted", ~..., "mean")
@@ -50,7 +55,9 @@ make_mock_fit <- function(n_obs = 20, n_mis = 30, n_draws = 40, seed = 42) {
         out$.draw <- seq_len(n_draws)
         out
       } else {
-        y_mis_draws
+        # matrix draws of whole vector variables, e.g. "y_mis"
+        keep <- sub("\\[.*", "", colnames(all_draws)) %in% variables
+        posterior::as_draws_matrix(all_draws[, keep, drop = FALSE])
       }
     },
     num_chains = function() 2L,
@@ -64,6 +71,7 @@ make_mock_fit <- function(n_obs = 20, n_mis = 30, n_draws = 40, seed = 42) {
       idx_obs = idx_obs,
       idx_mis = idx_mis,
       data    = list(y_obs = y_obs),
+      draws_mock = all_draws,
       call    = quote(fit_baygmst(mocked = TRUE))
     ),
     class = "baygmst_fit"
@@ -84,6 +92,33 @@ test_that("reconstruct() builds a tidy, year-sorted data.frame", {
   expect_setequal(unique(recon$type), c("instrumental", "reconstruction"))
   expect_true(all(is.na(recon$T_obs[recon$type == "reconstruction"])))
   expect_false(anyNA(recon$T_mean))
+})
+
+test_that("reconstruction_ensemble() returns coherent thinned members", {
+  fit <- make_mock_fit(n_obs = 20, n_mis = 30, n_draws = 40)
+  ens <- reconstruction_ensemble(fit, n_members = 10)
+  expect_s3_class(ens, "data.frame")
+  expect_equal(nrow(ens), length(fit$years))
+  expect_named(ens, c("year", "type", "T_obs", sprintf("m%04d", 1:10)))
+  keep <- attr(ens, "draws")
+  expect_equal(keep, round(seq(1, 40, length.out = 10)))
+  # member j is draw keep[j] of y_mis and of y_ins_fitted (same draw)
+  expect_equal(ens$m0003[fit$idx_mis],
+               unname(fit$draws_mock[keep[3], paste0("y_mis[", 1:30, "]")]))
+  expect_equal(ens$m0003[fit$idx_obs],
+               unname(fit$draws_mock[keep[3],
+                                     paste0("y_ins_fitted[", 1:20, "]")]))
+  expect_equal(ens$T_obs[fit$idx_obs], fit$data$y_obs)
+  expect_true(all(is.na(ens$T_obs[fit$idx_mis])))
+  expect_false(anyNA(ens[, -(1:3)]))
+
+  obs <- reconstruction_ensemble(fit, n_members = 5, instrumental = "observed")
+  expect_equal(obs$m0005[fit$idx_obs], fit$data$y_obs)
+  expect_equal(obs$m0001[fit$idx_mis], ens$m0001[fit$idx_mis])
+
+  expect_equal(ncol(reconstruction_ensemble(fit, n_members = NULL)), 3 + 40)
+  expect_error(reconstruction_ensemble(fit, n_members = 41), "exceeds")
+  expect_error(reconstruction_ensemble(fit, n_members = 0), "positive")
 })
 
 test_that("summary() and print methods work on a mocked fit", {
