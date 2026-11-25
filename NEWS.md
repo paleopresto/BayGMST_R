@@ -1,3 +1,33 @@
+# BayGMST (development version)
+
+## New
+
+* `reconstruction_ensemble()` returns posterior ensemble members of the
+  reconstruction (one column per evenly thinned draw, 1000 by default), for
+  analyses that need individual draws rather than the summary bands of
+  `reconstruct()`. Instrumental years hold either the proxy-only estimate
+  (`instrumental = "proxy_only"`, default) or the observed values
+  (`"observed"`), giving a continuous GMST ensemble. `n_members` sets the
+  ensemble size, up to the number of post-warmup draws in the fit (e.g.
+  10000 members needs `chains * iter_sampling >= 10000`).
+
+## Bug fixes
+
+* `y_ins_fitted`, the proxy-only estimate of the instrumental years that
+  `reconstruct()` and `plot_reconstruction()` show for the instrumental
+  period, is now drawn by a Kalman filter followed by backward sampling, so
+  each year is estimated from the proxies of the whole instrumental period.
+  0.1.0 used a forward-only filter (each year conditioned only on earlier
+  years), which made the credible band jump wider at the start of the
+  instrumental period (in the Presto2k reconstruction, from 0.32 degrees C
+  in 1849 to 0.55 by 1855). Fix contributed by Tyler Bagwell. The new block
+  also handles gaps in the instrumental record and records that start in the
+  first year, so the `y[NT_mis]` indexing shorthand noted under 0.1.0 is
+  gone.
+* The `sigma_y_ins` generated quantity, the fixed variance of the old
+  forward filter, has been removed. Parameter posteriors and the
+  pre-instrumental reconstruction `y_mis` are unchanged.
+
 # BayGMST 0.1.0
 
 Initial packaging of the BayGMST model. Previously this repository was a
@@ -85,7 +115,8 @@ requires (they no longer clear the workspace, and they restore `par()`).
 The following were reviewed and signed off by the package authors before
 the first CRAN release:
 
-* **`y[NT_mis]`/`z[NT_mis]` indexing, kept as is.** In
+* **`y[NT_mis]`/`z[NT_mis]` indexing, kept as is** (superseded in the
+  development version, which rewrites this block). In
   `src/stan/baygmst.stan`, the observed-period fitted-value block uses the
   count `NT_mis` as a vector index at `t == 1`. Because missing
   (pre-instrumental) years always occupy positions `1:NT_mis`, this is

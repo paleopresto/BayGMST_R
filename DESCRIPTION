@@ -1,7 +1,7 @@
 Package: BayGMST
 Type: Package
 Title: Bayesian Reconstruction of Global Mean Surface Temperature
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R: c(
     person("Tyler", "Bagwell", email = "teb6@rice.edu",
            role = "aut"),
