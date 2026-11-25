@@ -91,46 +91,68 @@ model {
 }
 generated quantities {
   vector[NT] mu_y;              // fitted mean for y_t
-  vector[NT_obs] y_ins_fitted;  // fitted temperature values for the instrumental period (for posterior predictive checks)
-  real sigma_y_ins;             // effective noise for the fitted values during the instrumental period (combining process and proxy noise)
+  vector[NT_obs] y_ins_fitted;  // proxy-only estimate of the instrumental years (posterior predictive checks)
 
   // y mean (conditional on realized y[t-1])
   mu_y[1] = mu_forcing[1];
   for (t in 2:NT)
     mu_y[t] = phi_T * y[t-1] + mu_forcing[t];
 
-  // y fitted values for the observed period (for PPCs)
-  sigma_y_ins = alpha1^2/sigma_z^2;
-  sigma_y_ins = sigma_y_ins + (1/sigma_y^2);
-  sigma_y_ins = inv_sqrt(sigma_y_ins);
+  // y_ins_fitted: draw the instrumental-period temperatures from their
+  // distribution given the proxies (not y_obs), the parameters, and the
+  // reconstructed temperature just before the instrumental period. Kalman
+  // filter forward, then backward sampling (forward-filtering
+  // backward-sampling), so each year uses proxies from the whole period
+  // rather than only earlier years. Contributed by Tyler Bagwell
+  // (2026-11-24); it replaces a forward-only filter that inflated the
+  // credible band at the start of the instrumental period.
+  //
+  // The filter runs over every year from the first to the last observed one
+  // (L years), so gaps inside the instrumental record are handled; if the
+  // record starts at t = 1 the filter starts from the prior on y[1].
+  {
+    int k0 = idx_obs[1];
+    int L = idx_obs[NT_obs] - k0 + 1;
+    vector[L] a;   // predicted mean
+    vector[L] Pp;  // predicted variance
+    vector[L] m;   // filtered mean
+    vector[L] P;   // filtered variance
+    vector[L] y_s; // backward-sampled path
+    real m_prev = 0;
+    real P_prev = 0;
+    if (k0 > 1)
+      m_prev = y[k0 - 1];
 
-  for (t in 1:NT_obs){
-    real mu_help;
-    real mu_y_help;
-    if (t == 1){
-      // NOTE(BayGMST, revisited -- see NEWS.md "Known limitations"): y[NT_mis]
-      // and z[NT_mis] here use the *count* NT_mis as a direct vector index,
-      // flagged by the original author with "CHECK THIS LINE". Given how this
-      // pipeline actually builds its inputs -- missing (pre-instrumental)
-      // years always occupy positions 1:NT_mis and observed years always
-      // occupy the remaining, later positions, with no interleaving -- this
-      // is numerically equivalent to the presumably-intended
-      // y[idx_mis[NT_mis]] / z[idx_mis[NT_mis]] (the last pre-instrumental
-      // year), so it is *not* a live bug under normal use. It is fragile,
-      // undocumented shorthand, though: it would silently compute the wrong
-      // value if idx_mis/idx_obs were ever non-contiguous (e.g. a gap inside
-      // the instrumental record). Its effect is also narrowly scoped to
-      // y_ins_fitted[1] alone -- a posterior-predictive diagnostic value for
-      // the single earliest instrumental year -- not to the parameter
-      // posteriors or to y_mis, the pre-instrumental reconstruction itself.
-      mu_y_help = phi_T * y[NT_mis] + mu_forcing[idx_obs[t]];
-      mu_help = (mu_y_help/sigma_y^2) + (alpha1 * (z[idx_obs[t]] - phi_R*z[NT_mis])/sigma_z^2);
+    for (j in 1:L) {
+      int k = k0 + j - 1;
+      real r;
+      real K;
+      if (k == 1) {
+        a[j]  = mu_forcing[1];
+        Pp[j] = square(sigma_y);
+        r = z[1] - alpha0;
+      } else {
+        a[j]  = phi_T * m_prev + mu_forcing[k];
+        Pp[j] = square(phi_T) * P_prev + square(sigma_y);
+        r = z[k] - phi_R * z[k - 1] - alpha0;
+      }
+      K = Pp[j] * alpha1 / (square(alpha1) * Pp[j] + square(sigma_z));
+      m[j] = a[j] + K * (r - alpha1 * a[j]);
+      P[j] = (1 - K * alpha1) * Pp[j];
+      m_prev = m[j];
+      P_prev = P[j];
     }
-    else {
-      mu_y_help = phi_T * y_ins_fitted[t-1] + mu_forcing[idx_obs[t]];
-      mu_help = (mu_y_help/sigma_y^2) + (alpha1 * (z[idx_obs[t]] - phi_R*z[idx_obs[t-1]])/sigma_z^2);
+
+    y_s[L] = normal_rng(m[L], sqrt(P[L]));
+    for (s in 1:(L - 1)) {
+      int j = L - s;
+      real J = phi_T * P[j] / Pp[j + 1];
+      // P[j] * (1 - J * phi_T), written in a form that stays positive
+      y_s[j] = normal_rng(m[j] + J * (y_s[j + 1] - a[j + 1]),
+                          sqrt(P[j] * square(sigma_y) / Pp[j + 1]));
     }
-    mu_help = mu_help * sigma_y_ins^2;
-    y_ins_fitted[t] = normal_rng(mu_help, sigma_y_ins);
+
+    for (t in 1:NT_obs)
+      y_ins_fitted[t] = y_s[idx_obs[t] - k0 + 1];
   }
 }

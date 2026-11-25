@@ -21,7 +21,9 @@
 #'   \item{T_obs}{Observed instrumental temperature (`NA` for reconstructed
 #'     years).}
 #'   \item{T_mean}{Posterior mean (instrumental years: posterior predictive
-#'     mean of the fitted value; reconstructed years: posterior mean of the
+#'     mean of the proxy-only fitted value, `y_ins_fitted`, which is
+#'     estimated from the proxies of the whole instrumental period, not from
+#'     the instrumental data; reconstructed years: posterior mean of the
 #'     latent temperature).}
 #'   \item{T_lo_inner, T_hi_inner}{Inner credible band (`probs_inner`).}
 #'   \item{T_lo_outer, T_hi_outer}{Outer credible band (`probs_outer`).}
